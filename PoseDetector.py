@@ -130,9 +130,9 @@ class PoseDetector:
                     cv2.putText(image, self.__text__, (20, 50),
                                 cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
                     cv2.putText(image, "Pitch: " + str(int(self.__pitch__)), (450, 50),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
                     cv2.putText(image, "Yaw: " + str(int(self.__yaw__)), (450, 100),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
                 if self.draw_face_landmarks:
                     self.__mp_drawing__.draw_landmarks(
