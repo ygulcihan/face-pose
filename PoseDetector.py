@@ -2,7 +2,9 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import face_recognition
+from imutils.video import VideoStream
 
+#TODO: Block non user faces
 
 class PoseDetector:
 
@@ -53,7 +55,8 @@ class PoseDetector:
         self.__drawing_spec__ = self.__mp_drawing__.DrawingSpec(
             thickness=1, circle_radius=1)
 
-        self.__cap__ = cv2.VideoCapture(camera)
+        #self.__cap__ = cv2.VideoCapture(camera)
+        self.__cap__ = VideoStream(src=camera).start()
         
     def start(self):
         # Load a sample picture and learn how to recognize it.
@@ -68,13 +71,17 @@ class PoseDetector:
             self.user_name
         ]
         
-        while self.__cap__.isOpened():
-            image = self.__cap__.read()[1]
+        while True:
+            #image = self.__cap__.read()[1]
+            image = self.__cap__.read()
             
             if(not self.__authenticated__):
                 image = self.face_recog(image)
                 cv2.putText(image, "Not Authenticated", (700, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
+                image = cv2.resize(image, (1366, 720))
+
             else:
+                image = cv2.resize(image, (1366, 720))
                 image = self.head_pose(image)
                 cv2.putText(image, "Authenticated", (800, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
                 cv2.putText(image, f"User: {self.__face_names__[0]}", (800, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2)
