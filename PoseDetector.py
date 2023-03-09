@@ -66,8 +66,12 @@ class PoseDetector:
         self.__drawing_spec__ = self.__mp_drawing__.DrawingSpec(
             thickness=1, circle_radius=1)
 
-        self.__cap__ = cv2.VideoCapture(camera)
-        # self.__cap__ = VideoStream(src=camera).start()
+        if self.cap_source == CaptureSource.CV2:
+            self.__cap__ = cv2.VideoCapture(camera)
+        elif self.cap_source == CaptureSource.IMUTILS:
+            self.__cap__ = VideoStream(src=camera).start()
+        else:
+            return
 
     def start(self):
         # Load a sample picture and learn how to recognize it.
@@ -92,9 +96,12 @@ class PoseDetector:
                 if (self.cap_source == CaptureSource.CV2):
                     image = self.__cap__.read()[1]
                 elif (self.cap_source == CaptureSource.IMUTILS):
-                    image = self.__cap__.read()
+                    image = self.__cap__.read()[1]
                 else:
                     print("Invalid Capture Source")
+                    break
+                if (image is None):
+                    print("No Frame")
                     break
                 image = cv2.flip(image, 1)
 
