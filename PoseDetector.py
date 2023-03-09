@@ -2,13 +2,17 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import face_recognition
+from enum import Enum
 from imutils.video import VideoStream
 import time
 
-
-# TODO: Block non user faces
+class CaptureSource(Enum):
+    CV2 = 1
+    IMUTILS = 2
 
 class PoseDetector:
+    
+    eCaptureSource = CaptureSource
     angle_threshold = 15
     window_title = "Pose Detector"
     draw_face_landmarks = False
@@ -18,6 +22,8 @@ class PoseDetector:
     detect_confidence = 0.5
     track_confidence = 0.5
     angle_coefficient = 1
+    low_res_recog = False
+    cap_source = CaptureSource.CV2
 
     __cap__ = None
     __face_mesh__ = None
@@ -29,7 +35,6 @@ class PoseDetector:
     __z__ = 0
     __text__ = ""
     __authenticated__ = False
-    __process_this_frame__ = True
     __known_face_names__ = []
     __known_face_encodings__ = []
     __known_face_index__ = -1
@@ -40,6 +45,7 @@ class PoseDetector:
     __matches__ = []
     __face_encodings__ = []
     __face_names__ = []
+    __reuse_this_frame__ = False
 
     def convertToDegrees(self, angles):
 
@@ -80,14 +86,25 @@ class PoseDetector:
 
         while True:
 
-            image = self.__cap__.read()[1]
-            # image = self.__cap__.read()
+            if (self.__reuse_this_frame__):
+                self.__reuse_this_frame__ = False
+            else:
+                if (self.cap_source == CaptureSource.CV2):
+                    image = self.__cap__.read()[1]
+                elif (self.cap_source == CaptureSource.IMUTILS):
+                    image = self.__cap__.read()
+                else:
+                    print("Invalid Capture Source")
+                    break
+                image = cv2.flip(image, 1)
 
             if (not self.__authenticated__):
                 image = self.face_recog(image)
                 cv2.putText(image, "Not Authenticated", (700, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
                 image = cv2.resize(image, (1366, 720))
+                if self.__authenticated__:
+                    self.__reuse_this_frame__ = True
 
             else:
                 image = cv2.resize(image, (1366, 720))
@@ -102,16 +119,17 @@ class PoseDetector:
             # Esc or Close Window to exit
             if cv2.waitKey(5) & 0xFF == 27 or cv2.getWindowProperty(self.window_title, cv2.WND_PROP_VISIBLE) == False:
                 break
-
-        self.__cap__.release()
+            
+        if self.cap_source == CaptureSource.CV2:
+            self.__cap__.release()
 
     def head_pose(self, pimage):
 
         image = pimage
 
-        image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # To improve performance for Mp
+        # To improve performance for MediaPipe, optionally mark the image as not writeable to pass by reference.
         image.flags.writeable = False
 
         # Get the result
@@ -239,10 +257,13 @@ class PoseDetector:
 
         self.__face_names__ = []
 
-        # Resize image of video to 1/4 size for faster face recognition processing
-        #small_frame = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
-        #
-        small_frame = image
+        if self.low_res_recog:
+            # Resize image of video to 1/4 size for faster face recognition processing
+            small_frame = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
+        
+        else:
+            small_frame = image
+            
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
         rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
@@ -256,7 +277,7 @@ class PoseDetector:
         
         name = "Unknown"
 
-        for face_encoding in self.__face_encodings__:
+        for i, face_encoding in enumerate(self.__face_encodings__):
             # See if the face is a match for the known face(s)
             self.__matches__ = face_recognition.compare_faces(
                 self.__known_face_encodings__, face_encoding)
@@ -267,7 +288,7 @@ class PoseDetector:
                 first_match_index = self.__matches__.index(True)
                 name = self.__known_face_names__[first_match_index]
                 if self.__known_face_index__ == -1:
-                    self.__known_face_index__ = self.__face_encodings__.index(face_encoding)
+                    self.__known_face_index__ = i
             
             # Or instead, use the known face with the smallest distance to the new face
             '''
@@ -277,25 +298,23 @@ class PoseDetector:
                 name = self.__known_face_names__[best_match_index]
             '''
         for location in self.__face_locations__:
+            if (self.__known_face_index__ != -1) and location == self.__face_locations__[self.__known_face_index__]:
+                continue
             self.__unknown_face_locations__.append(location)
-            if (self.__known_face_index__ != -1):
-                if location == self.__face_locations__[self.__known_face_index__]:
-                    self.__unknown_face_locations__.remove(location)
+
 
         if self.__unknown_face_locations__ != [] and self.__known_face_index__ != -1:
             for unknown in self.__unknown_face_locations__:
-                #cv2.rectangle(image, (unknown[3] * 4, unknown[0] * 4), (unknown[1] * 4, unknown[2] * 4), (0, 0, 0), -1)
-                cv2.rectangle(image, (unknown[3], unknown[0]), (unknown[1], unknown[2]), (0, 0, 0), -1)
-        
+                if self.low_res_recog:
+                    cv2.rectangle(image, (unknown[3] * 4, unknown[0] * 4), (unknown[1] * 4, unknown[2] * 4), (0, 0, 0), -1)
+                else:
+                    cv2.rectangle(image, (unknown[3], unknown[0]), (unknown[1], unknown[2]), (0, 0, 0), -1)
 
         self.__face_names__.append(name)
-
-        self.__process_this_frame__ = not self.__process_this_frame__
 
         if self.__face_names__ != [] and self.__face_names__[0] != "Unknown":
             self.__authenticated__ = True
 
-        image = cv2.flip(image, 1)
         self.__matches__ = []
         self.__face_encodings__ = []
         self.__face_locations__ = []
