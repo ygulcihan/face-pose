@@ -2,7 +2,7 @@ import PoseDetector
 
 pd = PoseDetector.PoseDetector("Head Position", 0)
 
-pd.cap_source = pd.eCaptureSource.IMUTILS
+pd.cap_source = pd.CaptureSource.IMUTILS
 
 pd.detect_confidence = 0.7
 pd.track_confidence = 0.7

@@ -33,7 +33,7 @@ while True:
         print(ratioAvg)
  
         cv2.line(img, leftBrowUp, leftFaceUp, (0, 200, 0), 2)
-        cv2.line(img, midFaceDown, midFaceDown, (0, 200, 0), 2)
+        cv2.line(img, midFaceUp, midFaceDown, (0, 200, 0), 2)
  
         if ratioAvg < 14.5 and counter == 0:
             raiseCounter += 1

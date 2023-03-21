@@ -4,6 +4,7 @@ import numpy as np
 import face_recognition
 from enum import Enum
 from imutils.video import VideoStream
+import TouchMenu
 import time
 
 class CaptureSource(Enum):
@@ -12,7 +13,7 @@ class CaptureSource(Enum):
 
 class PoseDetector:
     
-    eCaptureSource = CaptureSource
+    CaptureSource = CaptureSource
     angle_threshold = 15
     window_title = "Pose Detector"
     draw_face_landmarks = False
@@ -24,14 +25,14 @@ class PoseDetector:
     angle_coefficient = 1
     low_res_recog = False
     cap_source = CaptureSource.CV2
+    pitch = 0
+    yaw = 0
 
     __cap__ = None
     __face_mesh__ = None
     __mp_face_mesh__ = None
     __drawing_spec__ = None
     __mp_drawing__ = None
-    __pitch__ = 0
-    __yaw__ = 0
     __z__ = 0
     __text__ = ""
     __authenticated__ = False
@@ -49,9 +50,9 @@ class PoseDetector:
 
     def convertToDegrees(self, angles):
 
-        self.__pitch__ = np.round(
+        self.pitch = np.round(
             angles[0] * 180 * np.pi * self.angle_coefficient)
-        self.__yaw__ = np.round(
+        self.yaw = np.round(
             angles[1] * 180 * np.pi * self.angle_coefficient)
         self.__z__ = np.round(angles[2] * 180 * np.pi * self.angle_coefficient)
 
@@ -74,19 +75,6 @@ class PoseDetector:
             return
 
     def start(self):
-        # Load a sample picture and learn how to recognize it.
-        self.__user_image__ = face_recognition.load_image_file(
-            "train_img/yigit2.jpg")
-        self.__user_face_encoding__ = face_recognition.face_encodings(
-            self.__user_image__)[0]
-
-        # Create arrays of known face encodings and their names
-        self.__known_face_encodings__ = [
-            self.__user_face_encoding__
-        ]
-        self.__known_face_names__ = [
-            self.user_name
-        ]
 
         while True:
 
@@ -162,15 +150,15 @@ class PoseDetector:
                         if idx == 1:
                             nose_2d = (lm.x * img_w, lm.y * img_h)
 
-                        self.__pitch__, self.__yaw__ = int(
+                        self.pitch, self.yaw = int(
                             lm.x * img_w), int(lm.y * img_h)
 
                         # Get the 2D Coordinates
-                        face_2d.append([self.__pitch__, self.__yaw__])
+                        face_2d.append([self.pitch, self.yaw])
 
                         # Get the 3D Coordinates
                         face_3d.append(
-                            [self.__pitch__, self.__yaw__, lm.z])
+                            [self.pitch, self.yaw, lm.z])
 
                 # Convert it to the NumPy array
                 face_2d = np.array(face_2d, dtype=np.float64)
@@ -197,13 +185,13 @@ class PoseDetector:
                 self.convertToDegrees(angles)
 
                 # See where the user's head tilting
-                if self.__yaw__ < -self.angle_threshold:
+                if self.yaw < -self.angle_threshold:
                     self.__text__ = "Looking Left"
-                elif self.__yaw__ > self.angle_threshold:
+                elif self.yaw > self.angle_threshold:
                     self.__text__ = "Looking Right"
-                elif self.__pitch__ < -self.angle_threshold:
+                elif self.pitch < -self.angle_threshold:
                     self.__text__ = "Looking Down"
-                elif self.__pitch__ > self.angle_threshold:
+                elif self.pitch > self.angle_threshold:
                     self.__text__ = "Looking Up"
                 else:
                     self.__text__ = "Forward"
@@ -211,9 +199,9 @@ class PoseDetector:
                 # Add the text on the image
                 cv2.putText(image, self.__text__, (20, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-                cv2.putText(image, "Pitch: " + str(int(self.__pitch__)), (450, 50),
+                cv2.putText(image, "Pitch: " + str(int(self.pitch)), (450, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-                cv2.putText(image, "Yaw: " + str(int(self.__yaw__)), (450, 100),
+                cv2.putText(image, "Yaw: " + str(int(self.yaw)), (450, 100),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
             if self.draw_face_landmarks:
@@ -226,8 +214,8 @@ class PoseDetector:
 
             if self.draw_nose_vector:
                 p1 = (int(nose_2d[0]), int(nose_2d[1]))
-                p2 = (int(nose_2d[0] + self.__yaw__ * 10),
-                      int(nose_2d[1] - self.__pitch__ * 10))
+                p2 = (int(nose_2d[0] + self.yaw * 10),
+                      int(nose_2d[1] - self.pitch * 10))
                 cv2.line(image, p1, p2, (255, 0, 0), 3)
 
             if self.draw_face_box:
