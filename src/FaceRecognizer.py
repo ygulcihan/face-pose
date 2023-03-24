@@ -22,7 +22,7 @@ class FaceRecognizer:
         self.__low_res = low_res
         self.__nrOfFramesToSkip = number_of_frames_to_skip
 
-    def addUser(self, name, image_path):
+    def addUser(self, name, image_path): #TODO: Save users to file and read them on startup
         newUser = User.User(name, image_path)
         self.__users.append(newUser)
         self.__known_face_encodings.append(newUser.face_encoding)
@@ -49,15 +49,23 @@ class FaceRecognizer:
         self.__image_face_encodings = face_recognition.face_encodings(
             image, known_face_locations=self.__image_face_locations, model="small")
 
+
         for i, encoding in enumerate(self.__image_face_encodings):
             self.__matches += face_recognition.compare_faces(
-                self.__known_face_encodings, encoding)
+                self.__known_face_encodings, encoding, 0.4)
 
         for i, match in enumerate(self.__matches):
             if match:
-                self.activeUser = self.__users[i]
-                self.__activeUserIndex = i
+                try:
+                    self.activeUser = self.__users[i % self.__users.__len__()]
+                    self.__activeUserIndex = i % self.__users.__len__()
+                except Exception as e:
+                    print(e) 
+                    self.activeUser = None
+                    self.__activeUserIndex = -1
                 break
+            else:
+                self.activeUser = None
 
         if self.activeUser is None:
             return image
@@ -84,3 +92,24 @@ class FaceRecognizer:
         self.__matches = []
         self.activeUser = None
         self.__activeUserIndex = -1
+        
+fr = FaceRecognizer(low_res=True)
+
+cap = cv2.VideoCapture(0)
+
+fr.addUser("Yigit", "train_img/yigit.jpg")
+fr.addUser("Ahmet", "train_img/ahmet.jpg")
+fr.addUser("Seyit", "train_img/seyit.jpg")
+fr.addUser("Arda", "train_img/arda.jpg")
+
+while True:
+    image = cap.read()[1]
+    image = fr.eventLoop(image)
+    cv2.imshow("Test", image)
+    
+    if fr.activeUser != None:
+        print(fr.activeUser.name)
+    
+    if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Test", cv2.WND_PROP_VISIBLE) == False:
+        cap.release()
+        break

@@ -4,7 +4,6 @@ import numpy as np
 import face_recognition
 from enum import Enum
 from imutils.video import VideoStream
-import TouchMenu
 import time
 
 class CaptureSource(Enum):
