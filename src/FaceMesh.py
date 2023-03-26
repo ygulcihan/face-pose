@@ -4,7 +4,7 @@ import numpy as np
 import GestureRecognizer
 
 detect_confidence = 0.7
-track_confidence = 0.7
+track_confidence = 0.8
 pitch = 0
 yaw = 0
 
@@ -25,6 +25,7 @@ def __init__(angle_coefficient=1.0):
 
 def eventLoop(image):
 
+    image = cv2.resize(image, (683, 360))
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False  # To pass by reference
     results = __FACE_MESH__.process(image)
@@ -56,7 +57,7 @@ def eventLoop(image):
                 # Face outline coordinates
                 if idx in __FACE_OUTLINE_INDEXES__:
                     face_2d.append([x, y])
-                    face_3d.append([x, y, lm.z])
+                    face_3d.append([x, y, (lm.z)])
             
             # Convert it to NumPy array
             face_2d = np.array(face_2d, dtype=np.float64)
@@ -75,12 +76,12 @@ def eventLoop(image):
             # Get rotational matrix
             rotation_matrix = cv2.Rodrigues(rot_vec)[0]
 
-            rot_ratios = cv2.RQDecomp3x3(rotation_matrix)[0]
+            rot_ratios = cv2.RQDecomp3x3(rotation_matrix)[0] #TODO: experiment with rotation matrices
 
             # Calculate the head rotation in degrees
             __calculateHeadRotation(rot_ratios)
             
-            GestureRecognizer.isEyebrowRaised(face, pitch, yaw)
+            GestureRecognizer.process(face, pitch, yaw)
 
 
 def __calculateHeadRotation(ratios):
@@ -98,6 +99,7 @@ cap = cv2.VideoCapture(0)
 
 while True:
     image = cv2.flip(cap.read()[1], 1)  # Flip the image horizontally
+    __angle_coefficient__ = 1.0
     eventLoop(image)
     # Add the text on the image
     cv2.putText(image, "Pitch: " + str(int(pitch)), (450, 50),

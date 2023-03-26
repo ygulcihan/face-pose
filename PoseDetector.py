@@ -92,7 +92,7 @@ class PoseDetector:
                     break
                 image = cv2.flip(image, 1)
 
-            if (not self.__authenticated__):
+            if (not self.__authenticated__ and False):
                 image = self.face_recog(image)
                 cv2.putText(image, "Not Authenticated", (700, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
@@ -105,8 +105,7 @@ class PoseDetector:
                 image = self.head_pose(image)
                 cv2.putText(image, "Authenticated", (800, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-                cv2.putText(image, f"User: {self.__face_names__[0]}", (800, 130), cv2.FONT_HERSHEY_SIMPLEX, 2,
-                            (255, 0, 0), 2)
+                #cv2.putText(image, f"User: {self.__face_names__[0]}", (800, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2)
 
             cv2.imshow(self.window_title, image)
 
