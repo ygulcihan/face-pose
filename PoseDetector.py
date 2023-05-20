@@ -48,7 +48,6 @@ class PoseDetector:
     __reuse_this_frame__ = False
 
     def convertToDegrees(self, angles):
-
         self.pitch = np.round(
             angles[0] * 180 * np.pi * self.angle_coefficient)
         self.yaw = np.round(

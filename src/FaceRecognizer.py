@@ -16,7 +16,7 @@ class FaceRecognizer:
     __nrOfFramesToSkip = 3
     __skipped_frames = 0
 
-    activeUser = None
+    __activeUser = None
 
     def __init__(self, low_res=False, number_of_frames_to_skip=15):
         self.__low_res = low_res
@@ -57,17 +57,17 @@ class FaceRecognizer:
         for i, match in enumerate(self.__matches):
             if match:
                 try:
-                    self.activeUser = self.__users[i % self.__users.__len__()]
+                    self.__activeUser = self.__users[i % self.__users.__len__()]
                     self.__activeUserIndex = i % self.__users.__len__()
                 except Exception as e:
                     print(e) 
-                    self.activeUser = None
+                    self.__activeUser = None
                     self.__activeUserIndex = -1
                 break
             else:
-                self.activeUser = None
+                self.__activeUser = None
 
-        if self.activeUser is None:
+        if self.__activeUser is None:
             return image
 
         if self.__image_face_locations.__len__() > 1:
@@ -90,9 +90,13 @@ class FaceRecognizer:
         self.__image_face_locations = []
         self.__image_face_encodings = []
         self.__matches = []
-        self.activeUser = None
+        self.__activeUser = None
         self.__activeUserIndex = -1
         
+    def getUser(self):
+        return self.__activeUser
+        
+'''        
 fr = FaceRecognizer(low_res=True)
 
 cap = cv2.VideoCapture(0)
@@ -107,9 +111,10 @@ while True:
     image = fr.eventLoop(image)
     cv2.imshow("Test", image)
     
-    if fr.activeUser != None:
-        print(fr.activeUser.name)
+    if fr.__activeUser != None:
+        print(fr.__activeUser.name)
     
     if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Test", cv2.WND_PROP_VISIBLE) == False:
         cap.release()
         break
+'''

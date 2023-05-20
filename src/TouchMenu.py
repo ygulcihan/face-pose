@@ -69,19 +69,19 @@ class TouchMenu:
     def eventLoop(self):
         return
 
-
-def calibrate():
-    print("Calibrate")
-
-
-def settings():
-    print("Settings")
+    def calibrate(arg):
+        print("Calibrate")
 
 
-tm = TouchMenu()
+    def settings(arg):
+        print("Settings")
+
+
+""" tm = TouchMenu()
 tm.buttonHeight = 100
-tm.addButton("Calibrate", onClick=calibrate)
-tm.addButton("Settings", colorR=(0, 0, 255), onClick=settings)
+tm.addButton("Calibrate", onClick=tm.calibrate)
+tm.addButton("Settings", colorR=(0, 0, 255), onClick=tm.settings)
+tm.addButton("  Exit", colorR=(255, 0, 0), onClick=cv2.destroyAllWindows)
 tm.start()
 
 cv2.namedWindow("Touch Menu", cv2.WINDOW_NORMAL)
@@ -91,3 +91,4 @@ while True:
     cv2.imshow("Touch Menu", tm.getMenuImg())
     if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Touch Menu", cv2.WND_PROP_VISIBLE) < 1:
         break
+ """
