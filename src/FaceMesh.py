@@ -8,6 +8,8 @@ class FaceMesh:
     track_confidence = 0.8
     pitch = 0
     yaw = 0
+    pitchOffset = 0
+    yawOffset = 0
     face = []
 
     __angle_coefficient__ = 1.0
@@ -83,9 +85,9 @@ class FaceMesh:
                                 
     def __calculateHeadRotation(self, ratios):
         self.pitch = np.round(
-            ratios[0] * 180 * np.pi * self.__angle_coefficient__)
+            ratios[0] * 180 * np.pi * self.__angle_coefficient__) + self.pitchOffset
         self.yaw = np.round(
-            ratios[1] * 180 * np.pi * self.__angle_coefficient__)
+            ratios[1] * 180 * np.pi * self.__angle_coefficient__) + self.yawOffset
         
     def getYawPitch(self):
         return self.yaw, self.pitch

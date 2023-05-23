@@ -6,12 +6,72 @@ import FaceMesh
 import GestureRecognizer
 import TouchMenu
 import numpy as np
+import time
 
 run = True
+
+authenticated = False
+
+activeUser = ""
+lastActiveUser = None
+
+calibrating = True
+calibrationEntryTime = 0
+calibrationEntryTimeSet = False
+calibrationInstruction = "Position your head neutrally"
+calibrationInstructionColor = (0, 0, 255) #BGR
+
+
 def stop():
     global run
     run = False
-    print(exit)
+    print("Exit")
+
+
+def toggleCalibrate():
+    global authenticated, calibrating, calibrationEntryTimeSet, calibrationInstruction, calibrationInstructionColor
+
+    if calibrating:
+        calibrating = False
+        return
+
+    if authenticated and not calibrating:
+        calibrating = True
+        calibrationEntryTimeSet = False
+        calibrationInstruction = "Position your head neutrally"
+        calibrationInstructionColor = (0, 0, 255) #BGR
+
+
+def calibrate():
+    global calibrationEntryTime, calibrating, authenticated, calibrationEntryTimeSet, calibrationInstruction, calibrationInstructionColor    
+
+    if (not authenticated):
+        calibrating = False
+        return
+
+    if (not calibrationEntryTimeSet):
+        calibrationEntryTime = time.time()
+        calibrationEntryTimeSet = True
+        fm.yawOffset = 0
+        fm.pitchOffset = 0
+
+    cv2.putText(image, "Calibrating...", (400, 50),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+    cv2.putText(image, calibrationInstruction, (50, 100),
+                cv2.FONT_HERSHEY_COMPLEX, 1, calibrationInstructionColor, 2)
+    
+    # Calibrate Pitch and Yaw Offsets
+    if (time.time() - calibrationEntryTime >= 5 and time.time() - calibrationEntryTime < 8): #TODO: Move to FaceMesh.py
+        calibrationInstruction = "           Stay still"
+
+    if (time.time() - calibrationEntryTime >= 8):
+        fm.pitchOffset = fm.pitch * -1.0
+        fm.yawOffset = fm.yaw * -1.0
+        calibrationInstructionColor = (40, 200, 13)
+        calibrationInstruction = "     Calibration complete"
+        if (time.time() - calibrationEntryTime >= 10):
+            calibrating = False
+
 
 cap = Capture.Capture(CaptureSource.IMUTILS)
 fr = FaceRecognizer.FaceRecognizer()
@@ -24,7 +84,7 @@ fr.addUser("Pofuduk", "train_img/ahmet.jpg")
 tm = TouchMenu.TouchMenu()
 tm.buttonHeight = 100
 tm.imageSize = (600, 400)
-tm.addButton("Calibrate", onClick=tm.calibrate)
+tm.addButton("Calibrate", onClick=toggleCalibrate)
 tm.addButton("Settings", colorR=(0, 0, 255), onClick=tm.settings)
 tm.addButton("  Exit", colorR=(255, 0, 0), onClick=stop)
 tm.start()
@@ -32,31 +92,33 @@ tm.start()
 cv2.namedWindow("Wheelchair")
 cv2.setMouseCallback("Wheelchair", tm.clickEvent)
 
-authenticated = False
-activeUser = ""
-
-addText = True
-
 while run:
     image = cap.getFrame()
     image = cv2.resize(image, (600, 400))
 
     if (not authenticated):
         image = fr.eventLoop(image)
+        cv2.putText(image, "Facial Recognition in Progress", (10, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
+        cv2.putText(image, "Please Look at the Camera", (90, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (50, 50, 255), 2)
         if (fr.getUser() != None):
             print(f"User Recognized: {fr.getUser().name}")
             activeUser = fr.getUser().name
             authenticated = True
-        if addText:
-            cv2.putText(image, "Not Authenticated", (20, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
+            
     else:
         fm.eventLoop(image)
 
         if fm.face == []:
             authenticated = False
+            calibrating = False
             activeUser = ""
             continue
+        
+        if (lastActiveUser != activeUser):
+            lastActiveUser = activeUser
+            calibrating = True
 
         yaw, pitch = fm.getYawPitch()
         gr.process(fm.face, pitch, yaw)
@@ -65,21 +127,25 @@ while run:
         if gr.getGesture() != None:
             print(gr.getGesture())
         '''
-        if addText:
-            # Add the text on the image
-            cv2.putText(image, f"User: {activeUser}", (20, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (100, 255, 100), 2)
-            cv2.putText(image, "Pitch: " + str(int(pitch)), (450, 50),
+        cv2.putText(image, f"User: {activeUser}", (20, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.8, (40, 200, 13), 3)
+        if not calibrating:
+            cv2.putText(image, "Pitch: " + str(int(pitch)), (420, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-            cv2.putText(image, "Yaw: " + str(int(yaw)), (450, 100),
+            cv2.putText(image, "Yaw:  " + str(int(yaw)), (420, 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+
+        else:
+            calibrate()
 
     touchmenuImg = tm.getMenuImg()
     image = np.hstack((image, touchmenuImg))
 
     cv2.imshow("Wheelchair", image)
-    if (not run or cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Wheelchair", cv2.WND_PROP_VISIBLE) == False):
+    if (not run or cv2.getWindowProperty("Wheelchair", cv2.WND_PROP_VISIBLE) == False):
         break
-    
+    if cv2.waitKey(1) & 0xFF == ord('q') or cv2.waitKey(1) & 0xFF == ord('Q') or cv2.waitKey(1) & 0xFF == 27:  # ESC or q to exit
+        break
+
 cv2.destroyAllWindows()
 exit()

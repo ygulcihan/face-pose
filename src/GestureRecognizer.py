@@ -11,6 +11,7 @@ class Gesture(Enum):
 class GestureRecognizer:
     __print__ = False
     __brow_raise_threshold__ = 590
+    __normalized_ratio__ = 0
     __ratioList__ = []
     __weightList__ = []
     __avgRatio__ = 0
@@ -23,12 +24,11 @@ class GestureRecognizer:
 
     def process(self, face, pitch, yaw):
         self.__checkBlink(face, pitch, yaw)
-        self.__checkEyebrowRaise(face, pitch, yaw)
+        self.__checkEyebrowRaise(face, pitch, yaw)    
 
     def __checkBlink(self, face, pitch, yaw):
         return
 
-    # TODO: Add ratioing with pitch and yaw
     def __checkEyebrowRaise(self, face, pitch, yaw):
         
         if face == []:
@@ -64,26 +64,26 @@ class GestureRecognizer:
             self.__weightList__.append(weight)
 
             if len(self.__weightList__) >= 10:
-                normalizedRatio = np.average(
+                self.__normalized_ratio__ = np.average(
                     self.__ratioList__, weights=self.__weightList__)
                 self.__weightList__.pop(0)
 
             else:
-                normalizedRatio = np.average(
+                self.__normalized_ratio__ = np.average(
                     self.__ratioList__)
 
             self.__ratioList__.pop(0)
 
         else:
-            normalizedRatio = correctedRatio
+            self.__normalized_ratio__ = correctedRatio
 
-        if (normalizedRatio > self.__brow_raise_threshold__):
+        if (self.__normalized_ratio__ > self.__brow_raise_threshold__):
             self.brow_raised = True
         else:
             self.brow_raised = False
 
         if self.__print__:
-            print(f"Ratio: {int(distRatio)} | Corrected: {int(correctedRatio)} | Normalized: {int(normalizedRatio)} | Threshold: {self.__brow_raise_threshold__} | Raised: {self.brow_raised}")
+            print(f"Ratio: {int(distRatio)} | Corrected: {int(correctedRatio)} | Normalized: {int(self.__normalized_ratio__)} | Threshold: {self.__brow_raise_threshold__} | Raised: {self.brow_raised}")
             time.sleep(0.1)
 
     def __findDistance(self, p1, p2):
