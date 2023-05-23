@@ -7,7 +7,13 @@ import GestureRecognizer
 import TouchMenu
 import numpy as np
 
-cap = Capture.Capture(CaptureSource.CV2)
+run = True
+def stop():
+    global run
+    run = False
+    print(exit)
+
+cap = Capture.Capture(CaptureSource.IMUTILS)
 fr = FaceRecognizer.FaceRecognizer()
 fm = FaceMesh.FaceMesh(angle_coefficient=1)
 
@@ -20,7 +26,7 @@ tm.buttonHeight = 100
 tm.imageSize = (600, 400)
 tm.addButton("Calibrate", onClick=tm.calibrate)
 tm.addButton("Settings", colorR=(0, 0, 255), onClick=tm.settings)
-tm.addButton("  Exit", colorR=(255, 0, 0), onClick=cv2.destroyAllWindows)
+tm.addButton("  Exit", colorR=(255, 0, 0), onClick=stop)
 tm.start()
 
 cv2.namedWindow("Wheelchair")
@@ -31,7 +37,7 @@ activeUser = ""
 
 addText = True
 
-while True:
+while run:
     image = cap.getFrame()
     image = cv2.resize(image, (600, 400))
 
@@ -72,5 +78,8 @@ while True:
     image = np.hstack((image, touchmenuImg))
 
     cv2.imshow("Wheelchair", image)
-    if (cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Wheelchair", cv2.WND_PROP_VISIBLE) == False):
+    if (not run or cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Wheelchair", cv2.WND_PROP_VISIBLE) == False):
         break
+    
+cv2.destroyAllWindows()
+exit()
