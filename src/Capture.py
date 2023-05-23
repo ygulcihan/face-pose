@@ -1,10 +1,12 @@
 import cv2
 from imutils.video import VideoStream
 from enum import Enum
+from picamera2 import Picamera2
 
 class CaptureSource(Enum):
     CV2 = 1
     IMUTILS = 2
+    PICAMERA = 3
 
 class Capture:
     __cap__ = None
@@ -17,6 +19,8 @@ class Capture:
             self.__cap__ = cv2.VideoCapture(camera)
         elif self.__source__ == CaptureSource.IMUTILS:
             self.__cap__ = VideoStream(src=camera).start()
+        elif self.__source__ == CaptureSource.PICAMERA:
+            self.__cap__ = Picamera2()
         else:
             print("Invalid capture source")
             raise ValueError("Invalid capture source")
@@ -28,6 +32,9 @@ class Capture:
         
         elif(self.__source__ == CaptureSource.IMUTILS):
             frame = self.__cap__.read()
+
+        elif(self.__source__ == CaptureSource.PICAMERA):
+            frame = self.__cap__.capture_array()
 
         if (frame is None):
             print("No Frame")

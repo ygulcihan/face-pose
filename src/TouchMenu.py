@@ -60,8 +60,7 @@ class TouchMenu:
 
     def clickEvent(self, event, x, y, flags, param):
         if (x > self.imageSize[0] and x < self.imageSize[0] + self.size[0]):
-            match (event):
-                case cv2.EVENT_LBUTTONDOWN:
+            if (event) == cv2.EVENT_LBUTTONDOWN:
                     for button in self.buttons:
                         if (y > button.yTop and y < button.yBottom):
                             button.onClickEvent()
