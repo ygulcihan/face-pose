@@ -15,7 +15,7 @@ authenticated = False
 activeUser = ""
 lastActiveUser = None
 
-calibrating = True
+calibrating = False
 calibrationEntryTime = 0
 calibrationEntryTimeSet = False
 calibrationInstruction = "Position your head neutrally"
