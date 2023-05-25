@@ -84,7 +84,6 @@ class GestureRecognizer:
 
         if self.__print__:
             print(f"Ratio: {int(distRatio)} | Corrected: {int(correctedRatio)} | Normalized: {int(self.__normalized_ratio__)} | Threshold: {self.__brow_raise_threshold__} | Raised: {self.brow_raised}")
-            time.sleep(0.1)
 
     def __findDistance(self, p1, p2):
         x_distance = p2[0] - p1[0]

@@ -17,6 +17,7 @@ activeUser = ""
 lastActiveUser = None
 
 calibrating = False
+browThresholdCalibrated = False
 calibrationEntryTime = 0
 calibrationEntryTimeSet = False
 calibrationInstruction = "Position your head neutrally"
@@ -46,7 +47,7 @@ def toggleCalibrate():
 
 
 def calibrate():
-    global calibrationEntryTime, calibrating, authenticated, calibrationEntryTimeSet, calibrationInstruction, calibrationInstructionColor    
+    global calibrationEntryTime, calibrating, authenticated, calibrationEntryTimeSet, calibrationInstruction, calibrationInstructionColor, browThresholdCalibrated    
 
     if (not authenticated):
         calibrating = False
@@ -57,6 +58,7 @@ def calibrate():
         calibrationEntryTimeSet = True
         fm.yawOffset = 0
         fm.pitchOffset = 0
+        browThresholdCalibrated = False
 
     cv2.putText(image, "Calibrating...", (400, 50),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
@@ -70,17 +72,38 @@ def calibrate():
     if (time.time() - calibrationEntryTime >= 8):
         fm.pitchOffset = fm.pitch * -1.0
         fm.yawOffset = fm.yaw * -1.0
+        calibrationInstruction = "    Raise your eyebrows"
+        gr.process(fm.face, fm.pitch, fm.yaw)
+
+    # Calibrate Eyebrow Raise Threshold
+    raisedRatio = 0
+    loweredRatio = 0
+    if time.time() - calibrationEntryTime >= 13:
+        raisedRatio = gr.__normalized_ratio__
+        calibrationInstruction = "    Lower your eyebrows"
+        gr.process(fm.face, fm.pitch, fm.yaw)
+    
+    if time.time() - calibrationEntryTime >= 16:
+        
+        if (not browThresholdCalibrated):
+            loweredRatio = gr.__normalized_ratio__
+            newThreshold = loweredRatio + ((raisedRatio - loweredRatio) / 10.0 * 9.7)
+            print("New threshold: " + str(newThreshold))
+            gr.setBrowRaiseThreshold(newThreshold)
+            browThresholdCalibrated = True
+        
         calibrationInstructionColor = (40, 200, 13)
         calibrationInstruction = "     Calibration complete"
-        if (time.time() - calibrationEntryTime >= 10):
-            calibrating = False
+    
+    if (time.time() - calibrationEntryTime >= 17):
+        calibrating = False
 
 
 cap = Capture.Capture(CaptureSource.IMUTILS)
 fr = FaceRecognizer.FaceRecognizer()
 fm = FaceMesh.FaceMesh(angle_coefficient=1)
 
-gr = GestureRecognizer.GestureRecognizer(print=False)
+gr = GestureRecognizer.GestureRecognizer(print=True)
 fr.addUser("Yigit", "train_img/yigit.jpg")
 fr.addUser("Pofuduk", "train_img/ahmet.jpg")
 
@@ -135,12 +158,10 @@ while run:
         yaw, pitch = fm.getYawPitch()
         gr.process(fm.face, pitch, yaw)
 
-        '''
-        if gr.getGesture() != None:
-            print(gr.getGesture())
-        '''
         cv2.putText(image, f"User: {activeUser}", (20, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.8, (40, 200, 13), 3)
+        cv2.putText(image, f"Gesture: {gr.getGesture()}", (20, 370),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
         if not calibrating:
             cv2.putText(image, "Pitch: " + str(int(pitch)), (420, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
