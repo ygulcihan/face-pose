@@ -33,7 +33,7 @@ class FaceRecognizer:
 
         if self.__skipped_frames < self.__nrOfFramesToSkip:
             self.__skipped_frames += 1
-            return image
+            return
         
         self.__skipped_frames = 0
                 
@@ -68,7 +68,7 @@ class FaceRecognizer:
                 self.__activeUser = None
 
         if self.__activeUser is None:
-            return image
+            return
 
         if self.__image_face_locations.__len__() > 1:
             for i, location in enumerate(self.__image_face_locations):
@@ -84,7 +84,6 @@ class FaceRecognizer:
                     cv2.rectangle(
                         image, (unknown[3], unknown[0]), (unknown[1], unknown[2]), (0, 0, 0), -1)
                     
-        return image
 
     def __reset_vars(self):
         self.__image_face_locations = []

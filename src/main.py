@@ -7,6 +7,7 @@ import GestureRecognizer
 import TouchMenu
 import numpy as np
 import time
+import threading
 
 run = True
 
@@ -92,12 +93,22 @@ tm.start()
 cv2.namedWindow("Wheelchair")
 cv2.setMouseCallback("Wheelchair", tm.clickEvent)
 
+frThreadRunning = False
+
 while run:
     image = cap.getFrame()
     image = cv2.resize(image, (600, 400))
 
     if (not authenticated):
-        image = fr.eventLoop(image)
+        
+        if (not frThreadRunning):
+            frThread = threading.Thread(target=fr.eventLoop, args=(image,))   
+            frThread.start()
+            frThreadRunning = True
+            
+        else:
+            frThreadRunning = False
+        
         cv2.putText(image, "Facial Recognition in Progress", (10, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
         cv2.putText(image, "Please Look at the Camera", (90, 100),
@@ -108,6 +119,7 @@ while run:
             authenticated = True
             
     else:
+        threadStarted = False
         fm.eventLoop(image)
 
         if fm.face == []:
