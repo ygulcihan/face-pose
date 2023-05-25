@@ -22,6 +22,8 @@ calibrationEntryTimeSet = False
 calibrationInstruction = "Position your head neutrally"
 calibrationInstructionColor = (0, 0, 255) #BGR
 
+frThreadRunning = False
+
 
 def stop():
     global run
@@ -92,8 +94,6 @@ tm.start()
 
 cv2.namedWindow("Wheelchair")
 cv2.setMouseCallback("Wheelchair", tm.clickEvent)
-
-frThreadRunning = False
 
 while run:
     image = cap.getFrame()
