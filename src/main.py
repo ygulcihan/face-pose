@@ -74,18 +74,18 @@ def calibrate():
     if (time.time() - calibrationEntryTime >= 5 and time.time() - calibrationEntryTime < 8):  # TODO: Move to FaceMesh.py
         calibrationInstruction = "           Stay still"
 
-    if (time.time() - calibrationEntryTime >= 8):
+    if (time.time() - calibrationEntryTime >= 8 and time.time() - calibrationEntryTime < 13):
         fm.pitchOffset = fm.pitch * -1.0
         fm.yawOffset = fm.yaw * -1.0
         calibrationInstruction = "    Raise your eyebrows"
 
     # Calibrate Eyebrow Raise Threshold
-    if time.time() - calibrationEntryTime >= 13:
+    if (time.time() - calibrationEntryTime >= 13 and time.time() - calibrationEntryTime < 16):
         if raisedRatio == 0:
             raisedRatio = gr.__normalized_ratio__
         calibrationInstruction = "    Lower your eyebrows"
 
-    if time.time() - calibrationEntryTime >= 16:
+    if (time.time() - calibrationEntryTime >= 16 and time.time() - calibrationEntryTime < 17):
         if (not browThresholdCalibrated):
             if loweredRatio == 0:
                 loweredRatio = gr.__normalized_ratio__
