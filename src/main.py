@@ -159,7 +159,7 @@ while run:
 
         if (lastActiveUser != activeUser):
             lastActiveUser = activeUser
-            calibrating = True
+            toggleCalibrate()
 
         yaw, pitch = fm.getYawPitch()
         gr.process(fm.face, pitch, yaw, fm.pitchOffset, fm.yawOffset)
