@@ -5,6 +5,7 @@ import FaceRecognizer
 import FaceMesh
 import GestureRecognizer
 import TouchMenu
+import CommManager
 import numpy as np
 import time
 import threading
@@ -107,6 +108,10 @@ def calibrate():
 cap = Capture.Capture(CaptureSource.IMUTILS)
 fr = FaceRecognizer.FaceRecognizer()
 fm = FaceMesh.FaceMesh(angle_coefficient=1)
+
+cm  = CommManager.CommManager()
+
+cm.start()
 
 gr = GestureRecognizer.GestureRecognizer(print=True)
 fr.addUser("Yigit", "train_img/yigit.jpg")
