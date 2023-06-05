@@ -11,6 +11,8 @@ import time
 import threading
 
 run = True
+controlWheelchair = False
+wcControlLastToggled = 0
 
 authenticated = False
 
@@ -34,6 +36,12 @@ def stop():
     global run
     run = False
     print("Exit")
+    
+def toggleWheelchairControl():
+    global controlWheelchair, wcControlLastToggled
+    if (time.time() - wcControlLastToggled > 1.5):
+        wcControlLastToggled = time.time()
+        controlWheelchair = not controlWheelchair
 
 
 def toggleCalibrate():
@@ -160,6 +168,7 @@ while run:
             authenticated = False
             calibrating = False
             activeUser = ""
+            controlWheelchair = False
             continue
 
         if (lastActiveUser != activeUser):
@@ -168,11 +177,14 @@ while run:
 
         yaw, pitch = fm.getYawPitch()
         gr.process(fm.face, pitch, yaw, fm.pitchOffset, fm.yawOffset)
-
+        
+        if (gr.getGesture() == GestureRecognizer.Gesture.BROW_RAISE):
+            toggleWheelchairControl()
+            
         cv2.putText(image, f"User: {activeUser}", (20, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.8, (40, 200, 13), 3)
-        cv2.putText(image, f"Gesture: {gr.getGesture()}", (20, 370),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        cv2.putText(image, "Control: Enabled" if controlWheelchair else "Control: Disabled", (20, 370),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (40, 200, 13) if controlWheelchair else (50, 50, 255), 2)
         if not calibrating:
             cv2.putText(image, "Pitch: " + str(int(pitch)), (420, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)

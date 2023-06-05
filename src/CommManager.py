@@ -7,6 +7,7 @@ class CommManager:
     ser = None
     run = False
     obstacleDetected = False
+    finderEntryTime = 0
 
     def __init__(self):
         self.run = False
@@ -20,10 +21,12 @@ class CommManager:
         except:
             print('Failed to connect to port ' + port)
         finally:
-            if self.ser is not None:
+            if self.ser is not None and port is not None:
                 print('Connected to port ' + port)
-            else:
+            elif port is not None:
                 print("Failed to connect to port: " + port)
+            else:
+                print("Failed to connect to any port")
 
     def __sendValues(self, speed, position):
         txMsg = "S:" + str(speed) + ",P:" + str(position) + "\n"
@@ -37,11 +40,18 @@ class CommManager:
 
     def findCOMPort(self):
         ports = serial.tools.list_ports.comports(include_links=False)
+        self.finderEntryTime = time.time()
         for port in ports:
             print('Found port ' + port.device)
             ser = None
+            
+            if (time.time() - self.finderEntryTime > 20):
+                    print("Timeout waiting for port: " + port.device)
+                    self.finderEntryTime = time.time()
+                    continue
+            
             try:
-                ser = serial.Serial(port.device, 115200)
+                ser = serial.Serial(port.device, 115200, timeout=10, write_timeout=5)
                 time.sleep(3)
             except:
                 print('Failed to open port ' + port.device)
@@ -49,7 +59,11 @@ class CommManager:
             if ser is not None:
                 chkMsg = "CHK\n"
                 for i in range(3):
-                    ser.write(chkMsg.encode("ascii"))
+                    try:
+                        ser.write(chkMsg.encode("ascii"))
+                    except:
+                        print("Failed to write to port " + port.device)
+                        break
                     time.sleep(0.01)
                     reply = ser.read_until(b"\n")
                     if reply.decode("ascii") == "OK\n":

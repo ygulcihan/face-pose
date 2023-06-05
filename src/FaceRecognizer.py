@@ -18,7 +18,7 @@ class FaceRecognizer:
 
     __activeUser = None
 
-    def __init__(self, low_res=False, number_of_frames_to_skip=15):
+    def __init__(self, low_res=False, number_of_frames_to_skip=7):
         self.__low_res = low_res
         self.__nrOfFramesToSkip = number_of_frames_to_skip
 
