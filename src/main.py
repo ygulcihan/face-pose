@@ -21,7 +21,10 @@ browThresholdCalibrated = False
 calibrationEntryTime = 0
 calibrationEntryTimeSet = False
 calibrationInstruction = "Position your head neutrally"
-calibrationInstructionColor = (0, 0, 255) #BGR
+calibrationInstructionColor = (0, 0, 255)  # BGR
+
+raisedRatio = 0
+loweredRatio = 0
 
 frThreadRunning = False
 
@@ -43,11 +46,11 @@ def toggleCalibrate():
         calibrating = True
         calibrationEntryTimeSet = False
         calibrationInstruction = "Position your head neutrally"
-        calibrationInstructionColor = (0, 0, 255) #BGR
+        calibrationInstructionColor = (0, 0, 255)  # BGR
 
 
 def calibrate():
-    global calibrationEntryTime, calibrating, authenticated, calibrationEntryTimeSet, calibrationInstruction, calibrationInstructionColor, browThresholdCalibrated    
+    global calibrationEntryTime, calibrating, authenticated, calibrationEntryTimeSet, calibrationInstruction, calibrationInstructionColor, browThresholdCalibrated, raisedRatio, loweredRatio
 
     if (not authenticated):
         calibrating = False
@@ -58,43 +61,45 @@ def calibrate():
         calibrationEntryTimeSet = True
         fm.yawOffset = 0
         fm.pitchOffset = 0
+        raisedRatio = 0
+        loweredRatio = 0
         browThresholdCalibrated = False
 
     cv2.putText(image, "Calibrating...", (400, 50),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
     cv2.putText(image, calibrationInstruction, (50, 100),
                 cv2.FONT_HERSHEY_COMPLEX, 1, calibrationInstructionColor, 2)
-    
+
     # Calibrate Pitch and Yaw Offsets
-    if (time.time() - calibrationEntryTime >= 5 and time.time() - calibrationEntryTime < 8): #TODO: Move to FaceMesh.py
+    if (time.time() - calibrationEntryTime >= 5 and time.time() - calibrationEntryTime < 8):  # TODO: Move to FaceMesh.py
         calibrationInstruction = "           Stay still"
 
     if (time.time() - calibrationEntryTime >= 8):
         fm.pitchOffset = fm.pitch * -1.0
         fm.yawOffset = fm.yaw * -1.0
         calibrationInstruction = "    Raise your eyebrows"
-        gr.process(fm.face, fm.pitch, fm.yaw)
 
     # Calibrate Eyebrow Raise Threshold
-    raisedRatio = 0
-    loweredRatio = 0
     if time.time() - calibrationEntryTime >= 13:
-        raisedRatio = gr.__normalized_ratio__
+        if raisedRatio == 0:
+            raisedRatio = gr.__normalized_ratio__
         calibrationInstruction = "    Lower your eyebrows"
-        gr.process(fm.face, fm.pitch, fm.yaw)
-    
+
     if time.time() - calibrationEntryTime >= 16:
-        
         if (not browThresholdCalibrated):
-            loweredRatio = gr.__normalized_ratio__
-            newThreshold = loweredRatio + ((raisedRatio - loweredRatio) / 10.0 * 9.7)
+            if loweredRatio == 0:
+                loweredRatio = gr.__normalized_ratio__
+
+            print("Raised ratio: " + str(raisedRatio))
+            print("Lowered ratio: " + str(loweredRatio))
+            newThreshold = loweredRatio + ((raisedRatio - loweredRatio) * 70.0 / 100.0)
             print("New threshold: " + str(newThreshold))
             gr.setBrowRaiseThreshold(newThreshold)
             browThresholdCalibrated = True
-        
+
         calibrationInstructionColor = (40, 200, 13)
         calibrationInstruction = "     Calibration complete"
-    
+
     if (time.time() - calibrationEntryTime >= 17):
         calibrating = False
 
@@ -105,6 +110,7 @@ fm = FaceMesh.FaceMesh(angle_coefficient=1)
 
 gr = GestureRecognizer.GestureRecognizer(print=True)
 fr.addUser("Yigit", "train_img/yigit.jpg")
+fr.addUser("Yigit", "train_img/yigit-gozluklu.jpg")
 fr.addUser("Pofuduk", "train_img/ahmet.jpg")
 
 tm = TouchMenu.TouchMenu()
@@ -123,15 +129,15 @@ while run:
     image = cv2.resize(image, (600, 400))
 
     if (not authenticated):
-        
+
         if (not frThreadRunning):
-            frThread = threading.Thread(target=fr.eventLoop, args=(image,))   
+            frThread = threading.Thread(target=fr.eventLoop, args=(image,))
             frThread.start()
             frThreadRunning = True
-            
+
         else:
             frThreadRunning = False
-        
+
         cv2.putText(image, "Facial Recognition in Progress", (10, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
         cv2.putText(image, "Please Look at the Camera", (90, 100),
@@ -140,7 +146,7 @@ while run:
             print(f"User Recognized: {fr.getUser().name}")
             activeUser = fr.getUser().name
             authenticated = True
-            
+
     else:
         threadStarted = False
         fm.eventLoop(image)
@@ -150,13 +156,13 @@ while run:
             calibrating = False
             activeUser = ""
             continue
-        
+
         if (lastActiveUser != activeUser):
             lastActiveUser = activeUser
             calibrating = True
 
         yaw, pitch = fm.getYawPitch()
-        gr.process(fm.face, pitch, yaw)
+        gr.process(fm.face, pitch, yaw, fm.pitchOffset, fm.yawOffset)
 
         cv2.putText(image, f"User: {activeUser}", (20, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.8, (40, 200, 13), 3)

@@ -8,36 +8,42 @@ class Gesture(Enum):
     BROW_RAISE = 1
     BLINK = 2
 
+
 class GestureRecognizer:
     __print__ = False
-    __brow_raise_threshold__ = 590
+    __brow_raise_threshold__ = 10000
     __normalized_ratio__ = 0
     __ratioList__ = []
     __weightList__ = []
     __avgRatio__ = 0
 
+    __truePitch__ = 0
+    __trueYaw__ = 0
+
     def __init__(self, print=False):
         self.__print__ = print
-        
+
     def setBrowRaiseThreshold(self, threshold):
         self.__brow_raise_threshold__ = threshold
 
-    def process(self, face, pitch, yaw):
-        self.__checkBlink(face, pitch, yaw)
-        self.__checkEyebrowRaise(face, pitch, yaw)    
+    def process(self, face, pitch, yaw, pitchOffset, yawOffset):
+        self.__truePitch__ = pitch - pitchOffset
+        self.__trueYaw__ = yaw - yawOffset
+        self.__checkBlink(face)
+        self.__checkEyebrowRaise(face)
 
-    def __checkBlink(self, face, pitch, yaw):
+    def __checkBlink(self, face):
         return
 
-    def __checkEyebrowRaise(self, face, pitch, yaw):
-        
+    def __checkEyebrowRaise(self, face):
+
         if face == []:
             return
 
         head_height = self.__findDistance(
-            face[landmark_indexes.MID_FACE_DOWN], face[landmark_indexes.MID_FACE_UP])
+            face[landmark_indexes.MOUTH_UPPER], face[landmark_indexes.MID_FACE_UP])
 
-        if yaw < 0:
+        if self.__trueYaw__ < 0:
             brow_to_head_distance = self.__findDistance(
                 face[landmark_indexes.LEFT_BROW_UP], face[landmark_indexes.LEFT_FACE_UP])
 
@@ -47,10 +53,13 @@ class GestureRecognizer:
 
         distRatio = head_height / brow_to_head_distance * 100
 
-        if pitch > 0:
-            correctedRatio = distRatio - (pitch * 8) + (yaw * 1.5)
+        if self.__truePitch__ > 0:
+            correctedRatio = distRatio - (self.__truePitch__ * 1.8)
         else:
-            correctedRatio = distRatio - (pitch * 3.5) + (yaw / 12)
+            correctedRatio = distRatio - (self.__truePitch__ * 1.2)
+
+        if np.abs(self.__trueYaw__) > 18:
+            correctedRatio = correctedRatio - np.abs(self.__trueYaw__ * 2.6)
 
         self.__ratioList__.append(correctedRatio)
 

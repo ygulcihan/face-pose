@@ -6,7 +6,7 @@
             "type": "shell",
             "command": "python",
             "args": [
-                "pose.py"
+                "src/main.py"
             ],
             "group": {
                 "kind": "build",
