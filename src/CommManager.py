@@ -45,13 +45,13 @@ class CommManager:
             print('Found port ' + port.device)
             ser = None
             
-            if (time.time() - self.finderEntryTime > 20):
+            if (time.time() - self.finderEntryTime > 25):
                     print("Timeout waiting for port: " + port.device)
                     self.finderEntryTime = time.time()
                     continue
             
             try:
-                ser = serial.Serial(port.device, 115200, timeout=10, write_timeout=5)
+                ser = serial.Serial(port.device, 115200, timeout=6, write_timeout=5)
                 time.sleep(3)
             except:
                 print('Failed to open port ' + port.device)
