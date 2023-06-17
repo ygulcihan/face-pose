@@ -12,18 +12,16 @@ fr.addUser("Yigit", "train_img/yigit-gozluklu.jpg")
 def face_recognition_worker(image_queue, result_queue, stop_event):
     while not stop_event.is_set():
         try:
-            image = image_queue.get(timeout=1)  # Get an image from the queue with a timeout
+            image = image_queue.get(timeout=1)
         except queue.Empty:
             continue
 
-        # Perform face recognition on the image
         fr.eventLoop(image)
 
         if fr.getUser() is not None:
             result = fr.getUser().name
         else:
             result = None
-        # Put the result in the result queue
         result_queue.put(result)
 
 def display_frames(image_queue, stop_event):
@@ -55,7 +53,7 @@ if __name__ == "__main__":
 
     cap = cv2.VideoCapture(0)
 
-    while True:
+    while not stop_event.is_set():
         ret, frame = cap.read()
 
         if image_queue.full():
@@ -64,11 +62,8 @@ if __name__ == "__main__":
 
         if not result_queue.empty():
             result = result_queue.get()
-            # Process the face recognition result
             if result is not None:
                 print(result)
 
-        if stop_event.is_set():
-            cap.release()
-            cv2.destroyAllWindows()
-            break
+    cap.release()
+    cv2.destroyAllWindows()
