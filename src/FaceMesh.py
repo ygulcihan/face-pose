@@ -1,6 +1,8 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import time
+
 
 class FaceMesh:
 
@@ -11,6 +13,8 @@ class FaceMesh:
     pitchOffset = 0
     yawOffset = 0
     face = []
+
+    calibrated = False
 
     __angle_coefficient__ = 1.0
 
@@ -23,6 +27,35 @@ class FaceMesh:
     def __init__(self, angle_coefficient=1.0):
         self.__angle_coefficient__ = angle_coefficient
 
+    def calibrate(self, image):  # self.calibrated should be set before calling this function
+
+        if not hasattr(self.calibrate, "calibrationEntryTime"):
+            self.calibrate.calibrationEntryTime = -1           # Create and initialize static variable
+
+        if self.calibrate.calibrationEntryTime == -1:
+            self.calibrationEntryTime = time.time()
+            self.yawOffset = 0
+            self.pitchOffset = 0
+            calibrationInstruction = "Position your head neutrally"
+
+        cv2.putText(image, "Calibrating...", (400, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        
+        cv2.putText(image, calibrationInstruction, (50, 100),
+                    cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+        
+        elapsedTime = time.time() - self.calibrationEntryTime
+        
+        # Calibrate Pitch and Yaw Offsets
+        if (elapsedTime >= 5 and elapsedTime < 8):
+            calibrationInstruction = "           Stay still"
+
+        if (elapsedTime >= 8 and elapsedTime < 13):
+            self.pitchOffset = self.pitch * -1.0
+            self.yawOffset = self.yaw * -1.0
+            self.calibrate.calibrationEntryTime = -1
+            self.calibrated = True
+        return image
 
     def eventLoop(self, image):
 
@@ -81,14 +114,13 @@ class FaceMesh:
 
                 # Calculate the head rotation in degrees
                 self.__calculateHeadRotation(rot_ratios)
-                
-                                
+
     def __calculateHeadRotation(self, ratios):
         self.pitch = np.round(
             ratios[0] * 180 * np.pi * self.__angle_coefficient__) + self.pitchOffset
         self.yaw = np.round(
             ratios[1] * 180 * np.pi * self.__angle_coefficient__) + self.yawOffset
-        
+
     def getYawPitch(self):
         return self.yaw, self.pitch
 

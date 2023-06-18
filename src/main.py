@@ -121,7 +121,7 @@ cm  = CommManager.CommManager()
 
 cm.start()
 
-gr = GestureRecognizer.GestureRecognizer(print=True)
+gr = GestureRecognizer.GestureRecognizer(print=False)
 fr.addUser("Yigit", "train_img/yigit.jpg")
 fr.addUser("Yigit", "train_img/yigit-gozluklu.jpg")
 fr.addUser("Pofuduk", "train_img/ahmet.jpg")
