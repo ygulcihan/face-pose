@@ -15,6 +15,8 @@ class FaceMesh:
     face = []
 
     calibrated = False
+    calibrationEntryTime = -1
+    calibrationInstruction = "Position your head neutrally"
 
     __angle_coefficient__ = 1.0
 
@@ -29,31 +31,27 @@ class FaceMesh:
 
     def calibrate(self, image):  # self.calibrated should be set before calling this function
 
-        if not hasattr(self.calibrate, "calibrationEntryTime"):
-            self.calibrate.calibrationEntryTime = -1           # Create and initialize static variable
-
-        if self.calibrate.calibrationEntryTime == -1:
+        if self.calibrationEntryTime == -1:
             self.calibrationEntryTime = time.time()
             self.yawOffset = 0
             self.pitchOffset = 0
-            calibrationInstruction = "Position your head neutrally"
 
         cv2.putText(image, "Calibrating...", (400, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
         
-        cv2.putText(image, calibrationInstruction, (50, 100),
+        cv2.putText(image, self.calibrationInstruction, (50, 100),
                     cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
         
         elapsedTime = time.time() - self.calibrationEntryTime
         
         # Calibrate Pitch and Yaw Offsets
         if (elapsedTime >= 5 and elapsedTime < 8):
-            calibrationInstruction = "           Stay still"
+            self.calibrationInstruction = "           Stay still"
 
         if (elapsedTime >= 8 and elapsedTime < 13):
             self.pitchOffset = self.pitch * -1.0
             self.yawOffset = self.yaw * -1.0
-            self.calibrate.calibrationEntryTime = -1
+            self.calibrationEntryTime = -1
             self.calibrated = True
         return image
 
