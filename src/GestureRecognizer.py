@@ -1,6 +1,7 @@
 import numpy as np
 import landmark_indexes
 import time
+import cv2
 from enum import Enum
 
 
@@ -19,9 +20,50 @@ class GestureRecognizer:
 
     __truePitch__ = 0
     __trueYaw__ = 0
+    
+    browThresholdCalibrated = False
+    browCalibrationEntryTime = -1
+    calibrationInstruction = "    Raise your eyebrows"
+    eyebrowRaisedRatio = 0
+    eyebrowLoweredRatio = 0
 
     def __init__(self, print=False):
         self.__print__ = print
+        
+    def calibrate (self, image):
+        if self.browCalibrationEntryTime == -1:
+            self.browCalibrationEntryTime = time.time()
+            self.eyebrowRaisedRatio = 0
+            self.eyebrowLoweredRatio = 0
+
+        cv2.putText(image, "Calibrating...", (400, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        
+        cv2.putText(image, self.calibrationInstruction, (50, 100),
+                    cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+        
+        elapsedTime = time.time() - self.browCalibrationEntryTime
+        
+        if (elapsedTime >= 3 and elapsedTime < 6):
+            if self.eyebrowRaisedRatio == 0:
+                self.eyebrowRaisedRatio = self.__normalized_ratio__
+            self.calibrationInstruction = "    Lower your eyebrows"
+
+        if (elapsedTime >= 6 and elapsedTime < 7):
+            if (not self.browThresholdCalibrated):
+                if self.eyebrowLoweredRatio == 0:
+                    self.eyebrowLoweredRatio = self.__normalized_ratio__
+
+                print("Raised ratio: " + str(self.eyebrowRaisedRatio))
+                print("Lowered ratio: " + str(self.eyebrowLoweredRatio))
+                newThreshold = self.eyebrowLoweredRatio + ((self.eyebrowRaisedRatio - self.eyebrowLoweredRatio) * 70.0 / 100.0)
+                print("New threshold: " + str(newThreshold))
+                self.setBrowRaiseThreshold(newThreshold)
+                self.browCalibrationEntryTime = -1
+                self.browThresholdCalibrated = True
+                
+        return image
+
 
     def setBrowRaiseThreshold(self, threshold):
         self.__brow_raise_threshold__ = threshold
