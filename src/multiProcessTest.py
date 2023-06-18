@@ -1,7 +1,7 @@
-import multiprocessing
 import queue
 import cv2
 import FaceRecognizer
+import multiprocessing
 
 fr = FaceRecognizer.FaceRecognizer(low_res=True, number_of_frames_to_skip=0)
 
@@ -13,29 +13,20 @@ def face_recognition_worker(image_queue, result_queue, stop_event):
     while not stop_event.is_set():
         try:
             image = image_queue.get(timeout=1)
-        except queue.Empty:
+        except Exception:
             continue
 
-        fr.eventLoop(image)
+        fr.process(image)
 
         if fr.getUser() is not None:
             result = fr.getUser().name
         else:
             result = None
-        result_queue.put(result)
-
-def display_frames(image_queue, stop_event):
-    while not stop_event.is_set():
-        try:
-            frame = image_queue.get(timeout=1)
-            cv2.imshow("Image", frame)
-            try:
-                if cv2.waitKey(1) == ord('q') or not cv2.getWindowProperty("Image", cv2.WND_PROP_VISIBLE):
-                    stop_event.set()
-            except Exception:
-                continue
-        except queue.Empty:
+        try:    
+            result_queue.put(result)
+        except BrokenPipeError or EOFError:
             continue
+
 
 if __name__ == "__main__":
     max_queue_size = 10
@@ -45,11 +36,9 @@ if __name__ == "__main__":
     result_queue = manager.Queue()
     stop_event = multiprocessing.Event()
 
-    recognition_process = multiprocessing.Process(target=face_recognition_worker, args=(image_queue, result_queue, stop_event))
+    recognition_process = multiprocessing.Process(target=face_recognition_worker,
+                                                  args=(image_queue, result_queue, stop_event))
     recognition_process.start()
-
-    display_process = multiprocessing.Process(target=display_frames, args=(image_queue, stop_event))
-    display_process.start()
 
     cap = cv2.VideoCapture(0)
 
@@ -64,6 +53,14 @@ if __name__ == "__main__":
             result = result_queue.get()
             if result is not None:
                 print(result)
+
+        cv2.imshow("Image", frame)
+        try:
+            if cv2.waitKey(1) == ord('q') or not cv2.getWindowProperty("Image", cv2.WND_PROP_VISIBLE):
+                stop_event.set()
+                face_recognition_worker.join()
+        except Exception:
+            continue
 
     cap.release()
     cv2.destroyAllWindows()

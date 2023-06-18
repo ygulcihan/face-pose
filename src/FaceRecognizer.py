@@ -52,7 +52,7 @@ class FaceRecognizer:
 
         for i, encoding in enumerate(self.__image_face_encodings):
             self.__matches += face_recognition.compare_faces(
-                self.__known_face_encodings, encoding, 0.4)
+                self.__known_face_encodings, encoding, 0.6)
 
         for i, match in enumerate(self.__matches):
             if match:
