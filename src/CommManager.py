@@ -58,7 +58,7 @@ class CommManager:
                 continue
             if ser is not None:
                 chkMsg = "CHK\n"
-                for i in range(3):
+                for i in range(2):
                     try:
                         ser.write(chkMsg.encode("ascii"))
                     except:

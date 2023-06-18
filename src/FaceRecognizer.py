@@ -27,7 +27,7 @@ class FaceRecognizer:
         self.__users.append(newUser)
         self.__known_face_encodings.append(newUser.face_encoding)
 
-    def eventLoop(self, image):
+    def process(self, image):
         
         self.__reset_vars()
 
