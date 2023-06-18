@@ -17,9 +17,9 @@ fr.addUser("Pofuduk", "train_img/ahmet.jpg")
 
 
 ''' Face Recognition Process Worker '''
-def fr_worker(image_queue, result_queue, run_event):
+def fr_worker(image_queue, result_queue):
     global fr
-    while run_event.is_set():
+    while True:
         try:
             image = image_queue.get(timeout=0.5)
             fr.process(image)
@@ -58,7 +58,6 @@ if __name__ == "__main__":
     def stop():
         global run
         run = False
-        fr_run_event.clear()
         fr_process.terminate()
         print("Exit")
 
@@ -128,10 +127,9 @@ if __name__ == "__main__":
     ''' Process, Queue, and Event Creation '''
     image_queue = manager.Queue(maxsize=10)
     fr_result_queue = manager.Queue(maxsize=1)
-    fr_run_event = manager.Event()
-    fr_run_event.set()
+    
     fr_process = multiprocessing.Process(
-        target=fr_worker, args=(image_queue, fr_result_queue, fr_run_event))
+        target=fr_worker, args=(image_queue, fr_result_queue))
     fr_process.start()
         
     
@@ -196,11 +194,9 @@ if __name__ == "__main__":
         cv2.imshow("Wheelchair", image)
         
         if (not run or cv2.getWindowProperty("Wheelchair", cv2.WND_PROP_VISIBLE) == False):
-            fr_run_event.clear()
             fr_process.terminate()
             break
         if cv2.waitKey(1) & 0xFF == ord('q') or cv2.waitKey(1) & 0xFF == ord('Q') or cv2.waitKey(1) & 0xFF == 27:  # ESC or q to exit
-            fr_run_event.clear()
             fr_process.terminate()
             break
         
