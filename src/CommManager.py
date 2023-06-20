@@ -15,9 +15,12 @@ class CommManager:
         
     def start(self):
         port = self.findCOMPort()
+        if port is None or port == "None":
+            self.ser = None
         try:
             self.ser = serial.Serial(port, 115200)
             time.sleep(1)
+
         except:
             print('Failed to connect to port ' + port)
         finally:
@@ -79,6 +82,10 @@ class CommManager:
         print("Failed to Select Port: " + port.device)
         return None
     def eventLoop(self, speed, position):
+        
+        if (self.ser.port is None):
+            return
+        
         rxMsg = self.ser.read_until(b'\n').decode(encoding='ascii')
         if (rxMsg == "OD\n"):
                 self.obstacleDetected = True

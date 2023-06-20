@@ -14,6 +14,7 @@ fr = FaceRecognizer.FaceRecognizer()
 fr.addUser("Yigit", "train_img/yigit.jpg")
 fr.addUser("Yigit", "train_img/yigit-gozluklu.jpg")
 fr.addUser("Pofuduk", "train_img/ahmet.jpg")
+fr.addUser("Prronto", "train_img/pronto.jpg")
 
 
 ''' Face Recognition Process Worker '''
@@ -153,6 +154,10 @@ if __name__ == "__main__":
                 print(f"User Recognized: {tUser.name}")
                 activeUser = tUser.name
                 authenticated = True
+
+            if (not fm.calibrated or not gr.browThresholdCalibrated):
+                calibrating = False
+                toggleCalibrate()
         else:
             fm.eventLoop(image)
             
@@ -160,17 +165,22 @@ if __name__ == "__main__":
                 authenticated = False
                 calibrating = False
                 activeUser = ""
+                fr_result_queue.get()
+                while image_queue.qsize() > 0:
+                    image_queue.get()
                 controlWheelchair = False
                 continue
+
             
             if (lastActiveUser != activeUser):
                 lastActiveUser = activeUser
-                toggleCalibrate()
+                if (not calibrating):
+                    toggleCalibrate()
                 
             yaw, pitch = fm.getYawPitch()
             gr.process(fm.face, pitch, yaw, fm.pitchOffset, fm.yawOffset)
             
-            if (gr.getGesture() == GestureRecognizer.Gesture.BROW_RAISE):
+            if (gr.getGesture() == GestureRecognizer.Gesture.BROW_RAISE) and not calibrating:
                 toggleWheelchairControl()
                 
             if controlWheelchair:
@@ -187,6 +197,7 @@ if __name__ == "__main__":
                 cv2.putText(image, "Yaw:  " + str(int(yaw)), (420, 100),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
             else:
+                controlWheelchair = False
                 calibrate()
                 
         touchmenuImg = tm.getMenuImg()

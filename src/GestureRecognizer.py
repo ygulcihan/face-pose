@@ -35,6 +35,7 @@ class GestureRecognizer:
             self.browCalibrationEntryTime = time.time()
             self.eyebrowRaisedRatio = 0
             self.eyebrowLoweredRatio = 0
+            self.calibrationInstruction = "    Raise your eyebrows"
 
         cv2.putText(image, "Calibrating...", (400, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
