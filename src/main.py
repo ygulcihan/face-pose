@@ -8,6 +8,7 @@ import TouchMenu
 import CommManager
 import numpy as np
 import time
+import multiprocessing
 
 
 fr = FaceRecognizer.FaceRecognizer()
@@ -32,7 +33,6 @@ def fr_worker(image_queue, result_queue):
     
 if __name__ == "__main__":
     
-    import multiprocessing
     manager = multiprocessing.Manager()
     ''' Import FaceMesh after creating manager to avoid double process creation '''
     import FaceMesh  
@@ -43,6 +43,7 @@ if __name__ == "__main__":
     ''' Display Window Creation '''
     load_screen_bg = cv2.resize(cv2.imread("atilim_logo_bg.jpg"), (750, 400))
     cv2.imshow("Wheelchair", load_screen_bg)
+    cv2.moveWindow("Wheelchair", 25, 25)
     
     ''' Global variables '''
     run = True
@@ -108,7 +109,7 @@ if __name__ == "__main__":
             
     
     ''' Module instances '''
-    cap = Capture.Capture(CaptureSource.IMUTILS)
+    cap = Capture.Capture(CaptureSource.CV2)
     cm = CommManager.CommManager()
     gr = GestureRecognizer.GestureRecognizer(print=False)
     tm = TouchMenu.TouchMenu()
@@ -149,11 +150,12 @@ if __name__ == "__main__":
             cv2.putText(image, "Please Look at the Camera", (90, 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (50, 50, 255), 2)
             
-            tUser = fr_result_queue.get()
-            if (tUser is not None):
-                print(f"User Recognized: {tUser.name}")
-                activeUser = tUser.name
-                authenticated = True
+            if not fr_result_queue.empty():
+                tUser = fr_result_queue.get()
+                if tUser is not None:
+                    print(f"User Recognized: {tUser.name}")
+                    activeUser = tUser.name
+                    authenticated = True
 
             if (not fm.calibrated or not gr.browThresholdCalibrated):
                 calibrating = False

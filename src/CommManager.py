@@ -79,7 +79,6 @@ class CommManager:
                         continue
                     else:
                         continue
-        print("Failed to Select Port: " + port.device)
         return None
     def eventLoop(self, speed, position):
         
