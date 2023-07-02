@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import TouchKeyboard
 
-touchKeyboard = TouchKeyboard.TouchKeyboard()
 
 class Button:
 
@@ -42,9 +41,14 @@ class TouchMenu:
     size = (150, 400)
     imageSize = (600, 400)
     buttonHeight = 100
-    menuImg = cv2.resize(cv2.imread("black_bg.jpg"), size)
+    menuImg = cv2.resize(cv2.imread("resources/black_bg.jpg"), size)
     buttonCount = 0
     buttons = []
+    addUserWindowTitle = "Enter name for new user"
+    touchKeyboard = None
+
+    def __init__(self):
+        self.touchKeyboard = TouchKeyboard.TouchKeyboard()
 
     def addButton(self, text, colorR=(60, 60, 60), colorT=(255, 255, 255), onClick=None):
         yTop = self.buttonCount * self.buttonHeight
@@ -63,42 +67,51 @@ class TouchMenu:
     def clickEvent(self, event, x, y, flags, param):
         if (x > self.imageSize[0] and x < self.imageSize[0] + self.size[0]):
             if (event) == cv2.EVENT_LBUTTONDOWN:
-                    for button in self.buttons:
-                        if (y > button.yTop and y < button.yBottom):
-                            button.onClickEvent()
+                for button in self.buttons:
+                    if (y > button.yTop and y < button.yBottom):
+                        button.onClickEvent()
 
-    def eventLoop(self):
-        return
-
-    def calibrate(arg):
+    def calibrate(self):
         print("Calibrate")
 
-
-    def settings(arg):
+    def settings(self):
         print("Settings")
-        
-    def addUser(arg):
-        windowTitle = "Enter name for new user"
-        cv2.namedWindow(windowTitle)
-        textBoxImg = np.zeros((130, 800))
-        global touchKeyboard
-        img = np.vstack((textBoxImg, touchKeyboard.getKeyboardImage()))
-        touchKeyboard.touchOffsets = (0, 130)
-        cv2.imshow(windowTitle, img)
-        cv2.moveWindow(windowTitle, -2, 0)
-        cv2.setMouseCallback(windowTitle, touchKeyboard.clickEvent)
+
+    def addUserTouchEvent(self, event, x, y, flags, param):
+        if x > (800 - 130) and x < 800:  # Check for Cancel Button
+            if y > 0 and y < 130:
+                if event == cv2.EVENT_LBUTTONDOWN:
+                    print("Cancel")
+                    cv2.destroyWindow(self.addUserWindowTitle)
+        else:
+            self.touchKeyboard.clickEvent(event, x, y, flags, param)
+
+    def addUser(self):
+        cv2.namedWindow(self.addUserWindowTitle)
+        cancelButton = cv2.circle(
+            np.zeros((130, 130, 3)), (65, 65), 60, (0, 0, 255), cv2.FILLED)
+        cancelButton = cv2.polylines(cancelButton, [np.array(
+            [[40, 40], [90, 90]]).astype(int)], True, (255, 255, 255), 10)
+        cancelButton = cv2.polylines(cancelButton, [np.array(
+            [[90, 40], [40, 90]]).astype(int)], True, (255, 255, 255), 10)
+        textBoxImg = np.zeros((130, 670, 3))
+        textBoxImg = np.hstack((textBoxImg, cancelButton))
+        img = np.vstack((textBoxImg, self.touchKeyboard.getKeyboardImage()))
+        self.touchKeyboard.touchOffsets = (0, 130)
+        cv2.imshow(self.addUserWindowTitle, img)
+        cv2.moveWindow(self.addUserWindowTitle, -2, 0)
+        cv2.setMouseCallback(self.addUserWindowTitle, self.addUserTouchEvent)
 
 
 if __name__ == "__main__":
-    
+
     run = True
-    
+
     def stop():
         global run
         run = False
         cv2.destroyWindow("Touch Menu")
-    
-    
+
     tm = TouchMenu()
     tm.buttonHeight = 100
     tm.imageSize = (0, 0)

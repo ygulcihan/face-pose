@@ -35,12 +35,13 @@ def fr_worker(image_queue, result_queue):
 if __name__ == "__main__":
     
     manager = multiprocessing.Manager()
-    ''' Import FaceMesh after creating manager to avoid double process creation '''
+    ''' Import FaceMesh after creating manager to avoid double instance creation '''
     import FaceMesh  
     fm = FaceMesh.FaceMesh(angle_coefficient=1)
         
     ''' Display Window Creation '''
-    load_screen_bg = cv2.resize(cv2.imread("atilim_logo_bg.jpg"), (750, 400))
+    cv2.startWindowThread()
+    load_screen_bg = cv2.resize(cv2.imread("resources/atilim_logo_bg.jpg"), (750, 400))
     cv2.imshow("Wheelchair", load_screen_bg)
     cv2.moveWindow("Wheelchair", 25, 25)
     
