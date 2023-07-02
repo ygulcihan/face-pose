@@ -83,6 +83,7 @@ class TouchMenu:
         textBoxImg = np.zeros((130, 800))
         global touchKeyboard
         img = np.vstack((textBoxImg, touchKeyboard.getKeyboardImage()))
+        touchKeyboard.touchOffsets = (0, 130)
         cv2.imshow(windowTitle, img)
         cv2.moveWindow(windowTitle, -2, 0)
         cv2.setMouseCallback(windowTitle, touchKeyboard.clickEvent)

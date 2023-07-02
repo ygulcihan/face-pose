@@ -14,6 +14,7 @@ class TouchKeyboard:
     inputText = ""
     hOffset = 5
     vOffset = 5
+    touchOffsets = [0, 0]
 
     keys = [
         ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
@@ -84,9 +85,11 @@ class TouchKeyboard:
         return img
     
     def clickEvent(self, event, x, y, flags, param):
+        correctedX = x - self.touchOffsets[0]
+        correctedY = y - self.touchOffsets[1]
         for button in self.buttons:
-            if (x < button.pos[0] + button.size[0] and x > button.pos[0] and
-                y < button.pos[1] + button.size[1] and y > button.pos[1]):
+            if (correctedX < button.pos[0] + button.size[0] and correctedX > button.pos[0] and
+                correctedY < button.pos[1] + button.size[1] and correctedY > button.pos[1]):
                 
                 if event == cv2.EVENT_LBUTTONDOWN:
                     if button.text == "<-":
