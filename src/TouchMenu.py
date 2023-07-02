@@ -78,12 +78,14 @@ class TouchMenu:
         print("Settings")
         
     def addUser(arg):
-        print("Add User")
-        cv2.namedWindow("Add User")
-        textBoxImg = np.zeros((160, 800))
+        windowTitle = "Enter name for new user"
+        cv2.namedWindow(windowTitle)
+        textBoxImg = np.zeros((130, 800))
         global touchKeyboard
         img = np.vstack((textBoxImg, touchKeyboard.getKeyboardImage()))
-        cv2.imshow("Add User", img)
+        cv2.imshow(windowTitle, img)
+        cv2.moveWindow(windowTitle, -2, 0)
+        cv2.setMouseCallback(windowTitle, touchKeyboard.clickEvent)
 
 
 if __name__ == "__main__":
@@ -105,10 +107,10 @@ if __name__ == "__main__":
     tm.addButton("  Exit", colorR=(0, 0, 255), onClick=stop)
     tm.start()
 
-    cv2.namedWindow("Touch Menu", cv2.WINDOW_NORMAL)
+    cv2.namedWindow("Touch Menu")
     cv2.setMouseCallback("Touch Menu", tm.clickEvent)
 
     while run:
         cv2.imshow("Touch Menu", tm.getMenuImg())
-        if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Touch Menu", cv2.WND_PROP_VISIBLE) < 1:
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
