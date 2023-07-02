@@ -40,9 +40,8 @@ if __name__ == "__main__":
     fm = FaceMesh.FaceMesh(angle_coefficient=1)
         
     ''' Display Window Creation '''
-    cv2.startWindowThread()
-    load_screen_bg = cv2.resize(cv2.imread("resources/atilim_logo_bg.jpg"), (750, 400))
-    cv2.imshow("Wheelchair", load_screen_bg)
+    cv2.namedWindow("Wheelchair")
+    cv2.resizeWindow("Wheelchair", 750, 400)
     cv2.moveWindow("Wheelchair", 25, 25)
     
     ''' Global variables '''
