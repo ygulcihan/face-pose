@@ -27,7 +27,8 @@ def fr_worker(image_queue, result_queue):
             fr.process(image)
             result_queue.put(fr.getUser())
             
-        except Exception:
+        except Exception as e:
+            print(e)
             continue
         
     
@@ -37,9 +38,7 @@ if __name__ == "__main__":
     ''' Import FaceMesh after creating manager to avoid double process creation '''
     import FaceMesh  
     fm = FaceMesh.FaceMesh(angle_coefficient=1)
-    
-    del fr # Delete FaceRecognizer instance as it is only needed in fr sub-process
-    
+        
     ''' Display Window Creation '''
     load_screen_bg = cv2.resize(cv2.imread("atilim_logo_bg.jpg"), (750, 400))
     cv2.imshow("Wheelchair", load_screen_bg)

@@ -26,7 +26,7 @@ class TouchKeyboard:
             for j, key in enumerate(self.keys[i]):
                 self.buttonList.append(Button([80 * j + self.hOffset, 80 * i + self.vOffset], key))
 
-    def cornerRect(img, bbox, l=30, t=5, rt=1,
+    def cornerRect(self, img, bbox, l=30, t=5, rt=1,
                colorR=(255, 0, 255), colorC=(0, 255, 0)):
         """
         :param img: Image to draw on.
