@@ -11,6 +11,7 @@ class Button():
 class TouchKeyboard:
 
     buttons = []
+    inputText = ""
     hOffset = 5
     vOffset = 5
 
@@ -24,7 +25,14 @@ class TouchKeyboard:
     def __init__(self):
         for i in range(len(self.keys)):
             for j, key in enumerate(self.keys[i]):
-                self.buttons.append(Button([80 * j + self.hOffset, 80 * i + self.vOffset], key))
+                if i== 3 and j == 8: # Enter Key
+                    self.buttons.append(Button([80 * j + self.hOffset, 80 * i + self.vOffset], key, [160, 65]))
+                    
+                elif i == 2 and j == 9: # Backspace Key
+                    self.buttons.append(Button([80 * j + self.hOffset, 80 * i + self.vOffset], key, [85, 65]))
+                
+                else:
+                    self.buttons.append(Button([80 * j + self.hOffset, 80 * i + self.vOffset], key))
 
     def cornerRect(self, img, bbox, l=30, t=5, rt=1,
                colorR=(255, 0, 255), colorC=(0, 255, 0)):
@@ -57,7 +65,14 @@ class TouchKeyboard:
 
         return img
 
-    def getKeyboardImage(self, img):
+    def getKeyboardImage(self, backgroundImage=None):
+        
+        if backgroundImage is None:
+            img = np.zeros((320, 800))
+            
+        else:
+            img = cv2.resize(backgroundImage, (800, 320))
+        
         for button in self.buttons:
             x, y = button.pos
             #w, h = button.size
@@ -69,7 +84,18 @@ class TouchKeyboard:
         return img
     
     def clickEvent(self, event, x, y, flags, param):
-        i = 0
+        for button in self.buttons:
+            if (x < button.pos[0] + button.size[0] and x > button.pos[0] and
+                y < button.pos[1] + button.size[1] and y > button.pos[1]):
+                
+                if event == cv2.EVENT_LBUTTONDOWN:
+                    if button.text == "<-":
+                        self.inputText = self.inputText[:-1]
+                    elif button.text == "Enter":
+                        self.inputText = ""
+                    else:
+                        self.inputText += button.text
+                    print(self.inputText)
     
     
 if __name__ == "__main__":
@@ -78,5 +104,6 @@ if __name__ == "__main__":
     img = np.zeros((320, 800))
     img = tk.getKeyboardImage(img)
     cv2.imshow("Touch Keyboard", img)
+    cv2.setMouseCallback("Touch Keyboard", tk.clickEvent)
     cv2.waitKey(0)
     

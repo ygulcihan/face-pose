@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
+import TouchKeyboard
 
+touchKeyboard = TouchKeyboard.TouchKeyboard()
 
 class Button:
 
@@ -74,20 +76,39 @@ class TouchMenu:
 
     def settings(arg):
         print("Settings")
+        
+    def addUser(arg):
+        print("Add User")
+        cv2.namedWindow("Add User")
+        textBoxImg = np.zeros((160, 800))
+        global touchKeyboard
+        img = np.vstack((textBoxImg, touchKeyboard.getKeyboardImage()))
+        cv2.imshow("Add User", img)
 
 
-""" tm = TouchMenu()
-tm.buttonHeight = 100
-tm.addButton("Calibrate", onClick=tm.calibrate)
-tm.addButton("Settings", colorR=(0, 0, 255), onClick=tm.settings)
-tm.addButton("  Exit", colorR=(255, 0, 0), onClick=cv2.destroyAllWindows)
-tm.start()
+if __name__ == "__main__":
+    
+    run = True
+    
+    def stop():
+        global run
+        run = False
+        cv2.destroyWindow("Touch Menu")
+    
+    
+    tm = TouchMenu()
+    tm.buttonHeight = 100
+    tm.imageSize = (0, 0)
+    tm.addButton("Add User", colorR=(0, 155, 0), onClick=tm.addUser)
+    tm.addButton("Calibrate", onClick=tm.calibrate)
+    tm.addButton("Settings", colorR=(255, 140, 0), onClick=tm.settings)
+    tm.addButton("  Exit", colorR=(0, 0, 255), onClick=stop)
+    tm.start()
 
-cv2.namedWindow("Touch Menu", cv2.WINDOW_NORMAL)
-cv2.setMouseCallback("Touch Menu", tm.clickEvent)
+    cv2.namedWindow("Touch Menu", cv2.WINDOW_NORMAL)
+    cv2.setMouseCallback("Touch Menu", tm.clickEvent)
 
-while True:
-    cv2.imshow("Touch Menu", tm.getMenuImg())
-    if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Touch Menu", cv2.WND_PROP_VISIBLE) < 1:
-        break
- """
+    while run:
+        cv2.imshow("Touch Menu", tm.getMenuImg())
+        if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Touch Menu", cv2.WND_PROP_VISIBLE) < 1:
+            break
