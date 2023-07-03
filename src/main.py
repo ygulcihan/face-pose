@@ -1,4 +1,4 @@
-''' Module imports '''                               
+''' Module imports '''
 import Capture
 from Capture import CaptureSource
 import cv2
@@ -11,39 +11,61 @@ import time
 import multiprocessing
 
 
+''' Multi-Process Module Instances '''
 fr = FaceRecognizer.FaceRecognizer()
 fr.addUser("Yigit", "train_img/yigit.jpg")
 fr.addUser("Yigit", "train_img/yigit-gozluklu.jpg")
 fr.addUser("Pofuduk", "train_img/ahmet.jpg")
 fr.addUser("Prronto", "train_img/pronto.jpg")
 
+cm = CommManager.CommManager()
+
 
 ''' Face Recognition Process Worker '''
-def fr_worker(image_queue, result_queue):
+def fr_worker(image_queue, result_queue, authenticated_event):
     global fr
     while True:
-        try:
-            image = image_queue.get(timeout=0.5)
-            fr.process(image)
-            result_queue.put(fr.getUser())
-            
-        except Exception as e:
-            print(e)
-            continue
-        
-    
+        if not authenticated_event.is_set():
+            try:
+                image = image_queue.get(timeout=0.5)
+                fr.process(image)
+                result_queue.put(fr.getUser())
+
+            except Exception as e:
+                print("fr worker exception: ", e)
+                continue
+
+''' Communication Manager Process Worker '''
+def cm_worker(pitch_yaw_queue, obstacle_detected_event, control_wheelchair_event):
+    global cm
+    cm.start()
+    while True:
+        if control_wheelchair_event.is_set():
+            try:
+                if not pitch_yaw_queue.empty():
+                    pitch, yaw = pitch_yaw_queue.get(timeout=0.5)
+                obstacleDetected = cm.eventLoop(pitch, yaw)
+                if obstacleDetected and not obstacle_detected_event.is_set():
+                    obstacle_detected_event.set()
+                elif not obstacleDetected and obstacle_detected_event.is_set():
+                    obstacle_detected_event.clear()
+            except Exception as e:
+                print("cm worker exception: ", e)
+                continue
+
+
+''' Main Process '''
 if __name__ == "__main__":
-    
     manager = multiprocessing.Manager()
     ''' Import FaceMesh after creating manager to avoid double instance creation '''
-    import FaceMesh  
+    import FaceMesh
     fm = FaceMesh.FaceMesh(angle_coefficient=1)
-        
+
     ''' Display Window Creation '''
     cv2.namedWindow("Wheelchair")
     cv2.resizeWindow("Wheelchair", 750, 400)
     cv2.moveWindow("Wheelchair", 25, 25)
-    
+
     ''' Global variables '''
     run = True
     image = None
@@ -53,13 +75,13 @@ if __name__ == "__main__":
     activeUser = ""
     lastActiveUser = None
     calibrating = False
-    
 
     ''' Function definitions '''
     def stop():
         global run
         run = False
         fr_process.terminate()
+        cm_process.terminate()
         print("Exit")
 
     def toggleWheelchairControl():
@@ -67,7 +89,6 @@ if __name__ == "__main__":
         if (time.time() - wcControlLastToggled > 1.5):
             wcControlLastToggled = time.time()
             controlWheelchair = not controlWheelchair
-
 
     def toggleCalibrate():
         global authenticated, calibrating
@@ -82,7 +103,6 @@ if __name__ == "__main__":
             gr.browThresholdCalibrated = False
             fm.calibrationEntryTime = -1
             gr.browCalibrationEntryTime = -1
-
 
     def calibrate():
         global calibrating, authenticated, image
@@ -105,17 +125,13 @@ if __name__ == "__main__":
                         cv2.FONT_HERSHEY_COMPLEX, 1, (40, 200, 13), 2)
 
             calibrating = False
-            
-    
+
     ''' Module instances '''
     cap = Capture.Capture(CaptureSource.CV2)
-    cm = CommManager.CommManager()
     gr = GestureRecognizer.GestureRecognizer(print=False)
     tm = TouchMenu.TouchMenu()
-    
-    
+
     ''' Module configurations & initializations '''
-    cm.start()
     tm.buttonHeight = 100
     tm.imageSize = (600, 400)
     tm.addButton("Calibrate", onClick=toggleCalibrate)
@@ -124,31 +140,41 @@ if __name__ == "__main__":
     tm.start()
     cv2.setMouseCallback("Wheelchair", tm.clickEvent)
 
-    
     ''' Process, Queue, and Event Creation '''
     image_queue = manager.Queue(maxsize=10)
     fr_result_queue = manager.Queue(maxsize=1)
-    
+    authenticated_event = manager.Event()
+
     fr_process = multiprocessing.Process(
-        target=fr_worker, args=(image_queue, fr_result_queue))
+        target=fr_worker, args=(image_queue, fr_result_queue, authenticated_event))
     fr_process.start()
-        
-    
+
+    pitch_yaw_queue = manager.Queue(maxsize=1)
+    obstacle_detected_event = manager.Event()
+    control_wheelchair_event = manager.Event()
+
+    cm_process = multiprocessing.Process(target=cm_worker, args=(
+        pitch_yaw_queue, obstacle_detected_event, control_wheelchair_event))
+    cm_process.start()
+
     ''' Main Loop '''
     while run:
         image = cap.getFrame()
         image = cv2.resize(image, (600, 400))
-        
+
         if image_queue.full():
             image_queue.get()   # remove oldest image from queue if full
         image_queue.put(image)
         
+        authenticated_event.set() if authenticated else authenticated_event.clear()
+        control_wheelchair_event.set() if controlWheelchair else control_wheelchair_event.clear()
+
         if (not authenticated):
             cv2.putText(image, "Facial Recognition in Progress", (10, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
             cv2.putText(image, "Please Look at the Camera", (90, 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (50, 50, 255), 2)
-            
+
             if not fr_result_queue.empty():
                 tUser = fr_result_queue.get()
                 if tUser is not None:
@@ -161,7 +187,7 @@ if __name__ == "__main__":
                 toggleCalibrate()
         else:
             fm.eventLoop(image)
-            
+
             if fm.face == []:
                 authenticated = False
                 calibrating = False
@@ -172,26 +198,25 @@ if __name__ == "__main__":
                 controlWheelchair = False
                 continue
 
-            
             if (lastActiveUser != activeUser):
                 lastActiveUser = activeUser
                 if (not calibrating):
                     toggleCalibrate()
-                
+
             yaw, pitch = fm.getYawPitch()
+            if pitch_yaw_queue.full(): # Remove oldest data from queue if full
+                pitch_yaw_queue.get()
+            pitch_yaw_queue.put((pitch, yaw))
             gr.process(fm.face, pitch, yaw, fm.pitchOffset, fm.yawOffset)
-            
+
             if (gr.getGesture() == GestureRecognizer.Gesture.BROW_RAISE) and not calibrating:
                 toggleWheelchairControl()
-                
-            if controlWheelchair:
-                cm.eventLoop(speed=pitch, position=yaw)
-                
+
             cv2.putText(image, f"User: {activeUser}", (20, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.8, (40, 200, 13), 3)
             cv2.putText(image, "Control: Enabled" if controlWheelchair else "Control: Disabled", (20, 370),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (40, 200, 13) if controlWheelchair else (50, 50, 255), 2)
-            
+
             if not calibrating:
                 cv2.putText(image, "Pitch: " + str(int(pitch)), (420, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
@@ -200,18 +225,21 @@ if __name__ == "__main__":
             else:
                 controlWheelchair = False
                 calibrate()
-                
+
         touchmenuImg = tm.getMenuImg()
         image = np.hstack((image, touchmenuImg))
         cv2.imshow("Wheelchair", image)
-        
+
         if (not run or cv2.getWindowProperty("Wheelchair", cv2.WND_PROP_VISIBLE) == False):
             fr_process.terminate()
+            cm_process.terminate()
             break
         if cv2.waitKey(1) & 0xFF == ord('q') or cv2.waitKey(1) & 0xFF == ord('Q') or cv2.waitKey(1) & 0xFF == 27:  # ESC or q to exit
             fr_process.terminate()
+            cm_process.terminate()
             break
-        
+
     fr_process.join()
+    cm_process.join()
     cv2.destroyAllWindows()
     exit()

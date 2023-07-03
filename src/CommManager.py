@@ -8,6 +8,8 @@ class CommManager:
     run = False
     obstacleDetected = False
     finderEntryTime = 0
+    
+    __lastPrintTime = 0
 
     def __init__(self):
         self.run = False
@@ -18,7 +20,7 @@ class CommManager:
         if port is None or port == "None":
             self.ser = None
         try:
-            self.ser = serial.Serial(port, 115200)
+            self.ser = serial.Serial(port, 115200, timeout=0.1)
             time.sleep(1)
 
         except:
@@ -54,7 +56,7 @@ class CommManager:
                     continue
             
             try:
-                ser = serial.Serial(port.device, 115200, timeout=6, write_timeout=5)
+                ser = serial.Serial(port.device, 115200, timeout=0.1, write_timeout=2)
                 time.sleep(3)
             except:
                 print('Failed to open port ' + port.device)
@@ -92,7 +94,6 @@ class CommManager:
         elif (rxMsg == "OC\n"):
             self.obstacleDetected = False
 
-        if (self.run):
-            self.__sendValues(speed=speed, position=position)
+        self.__sendValues(speed=speed, position=position)
 
         return self.obstacleDetected
