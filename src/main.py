@@ -9,7 +9,6 @@ import CommManager
 import numpy as np
 import time
 import multiprocessing
-import FaceMesh
 
 
 ''' Multi-Process Module Instances '''
@@ -21,8 +20,6 @@ fr.addUser("Prronto", "train_img/pronto.jpg")
 
 cm = CommManager.CommManager()
 
-fm = FaceMesh.FaceMesh(angle_coefficient=1)
-
 
 ''' Face Recognition Process Worker '''
 def fr_worker(image_queue, result_queue, authenticated_event):
@@ -30,15 +27,13 @@ def fr_worker(image_queue, result_queue, authenticated_event):
     while True:
         if not authenticated_event.is_set():
             try:
-                if not image_queue.empty():
-                    image = image_queue.get(timeout=0.5)
-                    fr.process(image)
-                    result_queue.put(fr.getUser())
+                image = image_queue.get(timeout=0.5)
+                fr.process(image)
+                result_queue.put(fr.getUser())
 
             except Exception as e:
                 print("fr worker exception: ", e)
                 continue
-
 
 ''' Communication Manager Process Worker '''
 def cm_worker(pitch_yaw_queue, obstacle_detected_event, control_wheelchair_event):
@@ -85,6 +80,9 @@ def fm_worker(image_queue, face_detected_event, authenticated_event):
 ''' Main Process '''
 if __name__ == "__main__":
     manager = multiprocessing.Manager()
+    ''' Import FaceMesh after creating manager to avoid double instance creation '''
+    import FaceMesh
+    fm = FaceMesh.FaceMesh(angle_coefficient=1)
 
     ''' Display Window Creation '''
     cv2.namedWindow("Wheelchair")
@@ -167,7 +165,7 @@ if __name__ == "__main__":
     cv2.setMouseCallback("Wheelchair", tm.clickEvent)
 
     ''' Process, Queue, and Event Creation '''
-    image_queue = manager.Queue(maxsize=1)
+    image_queue = manager.Queue(maxsize=10)
     fr_result_queue = manager.Queue(maxsize=1)
     authenticated_event = manager.Event()
 
@@ -183,11 +181,6 @@ if __name__ == "__main__":
         pitch_yaw_queue, obstacle_detected_event, control_wheelchair_event))
     cm_process.start()
 
-    fm_face_detected_event = manager.Event()
-    fm_process = multiprocessing.Process(target=fm_worker, args=(
-        image_queue, fm_face_detected_event, authenticated_event))
-    fm_process.start()
-
     ''' Main Loop '''
     while run:
         image = cap.getFrame()
@@ -196,7 +189,7 @@ if __name__ == "__main__":
         if image_queue.full():
             image_queue.get()   # remove oldest image from queue if full
         image_queue.put(image)
-
+        
         authenticated_event.set() if authenticated else authenticated_event.clear()
         control_wheelchair_event.set() if controlWheelchair else control_wheelchair_event.clear()
 
@@ -218,7 +211,7 @@ if __name__ == "__main__":
                 toggleCalibrate()
         else:
 
-            if not fm_face_detected_event.is_set():
+            if fm.face == []:
                 authenticated = False
                 calibrating = False
                 activeUser = ""
@@ -234,7 +227,7 @@ if __name__ == "__main__":
                     toggleCalibrate()
 
             yaw, pitch = fm.getYawPitch()
-            if pitch_yaw_queue.full():  # Remove oldest data from queue if full
+            if pitch_yaw_queue.full(): # Remove oldest data from queue if full
                 pitch_yaw_queue.get()
             pitch_yaw_queue.put((pitch, yaw))
             gr.process(fm.face, pitch, yaw, fm.pitchOffset, fm.yawOffset)
