@@ -21,6 +21,7 @@ class GestureRecognizer:
     __truePitch__ = 0
     __trueYaw__ = 0
     
+    brow_raised = False
     browThresholdCalibrated = False
     browCalibrationEntryTime = -1
     calibrationInstruction = "    Raise your eyebrows"

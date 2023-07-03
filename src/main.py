@@ -62,12 +62,16 @@ def cm_worker(pitch_yaw_queue, obstacle_detected_event, control_wheelchair_event
 ''' Face Mesh Process Worker '''
 def fm_worker(image_queue, face_detected_event, authenticated_event):
     global fm
+    face_detected_event.set()
     while True:
         if authenticated_event.is_set():
             try:
                 if not image_queue.empty():
                     image = image_queue.get(timeout=0.5)
-                    fm.eventLoop(image)
+                    try:
+                        fm.eventLoop(image)
+                    except:
+                        continue
                     if fm.face == []:
                         face_detected_event.clear()
                     else:
@@ -103,6 +107,7 @@ if __name__ == "__main__":
         run = False
         fr_process.terminate()
         cm_process.terminate()
+        fm_process.terminate()
         print("Exit")
 
     def toggleWheelchairControl():
@@ -170,7 +175,7 @@ if __name__ == "__main__":
         target=fr_worker, args=(image_queue, fr_result_queue, authenticated_event))
     fr_process.start()
 
-    pitch_yaw_queue = manager.Queue(maxsize=1)
+    pitch_yaw_queue = manager.Queue(maxsize=2)
     obstacle_detected_event = manager.Event()
     control_wheelchair_event = manager.Event()
 
@@ -212,7 +217,6 @@ if __name__ == "__main__":
                 calibrating = False
                 toggleCalibrate()
         else:
-            fm.eventLoop(image)
 
             if not fm_face_detected_event.is_set():
                 authenticated = False
@@ -259,10 +263,12 @@ if __name__ == "__main__":
         if (not run or cv2.getWindowProperty("Wheelchair", cv2.WND_PROP_VISIBLE) == False):
             fr_process.terminate()
             cm_process.terminate()
+            fm_process.terminate()
             break
         if cv2.waitKey(1) & 0xFF == ord('q') or cv2.waitKey(1) & 0xFF == ord('Q') or cv2.waitKey(1) & 0xFF == 27:  # ESC or q to exit
             fr_process.terminate()
             cm_process.terminate()
+            fm_process.terminate()
             break
 
     fr_process.join()
