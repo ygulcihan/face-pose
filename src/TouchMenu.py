@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import TouchKeyboard
+import time
+import Settings
 
 
 class Button:
@@ -44,11 +46,25 @@ class TouchMenu:
     menuImg = cv2.resize(cv2.imread("resources/black_bg.jpg"), size)
     buttonCount = 0
     buttons = []
-    addUserWindowTitle = "Enter name for new user"
+
+    # Add User Window
     touchKeyboard = None
+    showAddUserWindow = False
+    cancelButtonSize = 80
+    addUserWindowTitle = "Add new user"
+    addUserState = "name"  # "name", "password", "done", or "error"
 
     def __init__(self):
         self.touchKeyboard = TouchKeyboard.TouchKeyboard()
+        self.touchKeyboard.touchOffsets = (0, 130)
+
+        cancelButtonImg = cv2.circle(
+            np.zeros((130, 130, 3)), (65, 65), self.cancelButtonSize // 2, (0, 0, 255), cv2.FILLED)
+        cancelButtonImg = cv2.polylines(cancelButtonImg, [np.array(
+            [[40, 40], [90, 90]]).astype(int)], True, (255, 255, 255), 8)
+        cancelButtonImg = cv2.polylines(cancelButtonImg, [np.array(
+            [[90, 40], [40, 90]]).astype(int)], True, (255, 255, 255), 8)
+        self.textBoxImg = np.hstack((np.zeros((130, 670, 3)), cancelButtonImg))
 
     def addButton(self, text, colorR=(60, 60, 60), colorT=(255, 255, 255), onClick=None):
         yTop = self.buttonCount * self.buttonHeight
@@ -78,29 +94,72 @@ class TouchMenu:
         print("Settings")
 
     def addUserTouchEvent(self, event, x, y, flags, param):
-        if x > (800 - 130) and x < 800:  # Check for Cancel Button
-            if y > 0 and y < 130:
-                if event == cv2.EVENT_LBUTTONDOWN:
-                    print("Cancel")
-                    cv2.destroyWindow(self.addUserWindowTitle)
+        if x > (800 - 130) and x < 800 and y > 0 and y < 130:  # Cancel Button
+            if event == cv2.EVENT_LBUTTONDOWN:
+                print("Cancel")
+                cv2.destroyWindow(self.addUserWindowTitle)
+                self.showAddUserWindow = False
+
+        elif x > (800 - 160) and x < 800 and y > (450 - 65) and y < 480:  # Enter Button
+            if event == cv2.EVENT_LBUTTONDOWN:
+                if self.addUserState == "name":
+                    if len(self.touchKeyboard.typedText) > 0:
+                        self.addUserState = "password"
+                        self.touchKeyboard.typedText = ""
+                elif self.addUserState == "password":
+                    if len(self.touchKeyboard.typedText) > 0:
+                        if (self.touchKeyboard.typedText == Settings.password or self.touchKeyboard.typedText == Settings.masterPassword):
+                            self.addUserState = "done"
+                        else:
+                            self.addUserState = "error"
+
         else:
             self.touchKeyboard.clickEvent(event, x, y, flags, param)
 
+    def getInputWindowImage(self, line1, line1Color, line2):
+        img = np.vstack(
+            (self.textBoxImg, self.touchKeyboard.getKeyboardImage()))
+        cv2.putText(img, line1, (10, 50),
+                    cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, line1Color, 2)
+        cv2.putText(img, line2, (420, 110),
+                    cv2.FONT_HERSHEY_PLAIN, 3.2, (255, 255, 255), 2)
+        return img
+
     def addUser(self):
         cv2.namedWindow(self.addUserWindowTitle)
-        cancelButton = cv2.circle(
-            np.zeros((130, 130, 3)), (65, 65), 60, (0, 0, 255), cv2.FILLED)
-        cancelButton = cv2.polylines(cancelButton, [np.array(
-            [[40, 40], [90, 90]]).astype(int)], True, (255, 255, 255), 10)
-        cancelButton = cv2.polylines(cancelButton, [np.array(
-            [[90, 40], [40, 90]]).astype(int)], True, (255, 255, 255), 10)
-        textBoxImg = np.zeros((130, 670, 3))
-        textBoxImg = np.hstack((textBoxImg, cancelButton))
-        img = np.vstack((textBoxImg, self.touchKeyboard.getKeyboardImage()))
-        self.touchKeyboard.touchOffsets = (0, 130)
-        cv2.imshow(self.addUserWindowTitle, img)
         cv2.moveWindow(self.addUserWindowTitle, -2, 0)
         cv2.setMouseCallback(self.addUserWindowTitle, self.addUserTouchEvent)
+        self.showAddUserWindow = True
+        self.addUserState = "name"
+
+        while self.showAddUserWindow:
+            if self.addUserState == "name":
+                img = self.getInputWindowImage(
+                    "Enter name for new user", (135, 0, 0), self.touchKeyboard.typedText)
+            elif self.addUserState == "password":
+                passwordField = "*" * len(self.touchKeyboard.typedText)
+                img = self.getInputWindowImage("Enter password", (135, 0, 0), passwordField)
+            elif self.addUserState == "done":
+                i = 0 # Add User to FaceRecognizer
+                img = self.getInputWindowImage("User added successfully", (0, 175, 0), "")
+                cv2.imshow(self.addUserWindowTitle, img)
+                cv2.waitKey(1)
+                time.sleep(1.5)
+                cv2.destroyWindow(self.addUserWindowTitle)
+                break
+            elif self.addUserState == "error":
+                img = self.getInputWindowImage("Incorrect password", (0, 0, 175), "")
+                cv2.imshow(self.addUserWindowTitle, img)
+                cv2.waitKey(1)
+                time.sleep(1.5)
+                self.touchKeyboard.typedText = ""
+                self.addUserState = "password"
+
+            cv2.imshow(self.addUserWindowTitle, img)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                cv2.destroyWindow(self.addUserWindowTitle)
+                break
 
 
 if __name__ == "__main__":
@@ -110,7 +169,7 @@ if __name__ == "__main__":
     def stop():
         global run
         run = False
-        cv2.destroyWindow("Touch Menu")
+        cv2.destroyAllWindows()
 
     tm = TouchMenu()
     tm.buttonHeight = 100
