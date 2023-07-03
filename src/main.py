@@ -10,17 +10,6 @@ import numpy as np
 import time
 import multiprocessing
 
-''' Queue and Event Creation '''
-manager = multiprocessing.Manager()
-
-image_queue = manager.Queue(maxsize=10)
-fr_result_queue = manager.Queue(maxsize=1)
-authenticated_event = manager.Event()
-
-pitch_yaw_queue = manager.Queue(maxsize=1)
-obstacle_detected_event = manager.Event()
-control_wheelchair_event = manager.Event()
-
 
 ''' Multi-Process Module Instances '''
 fr = FaceRecognizer.FaceRecognizer()
@@ -67,6 +56,7 @@ def cm_worker(pitch_yaw_queue, obstacle_detected_event, control_wheelchair_event
 
 ''' Main Process '''
 if __name__ == "__main__":
+    manager = multiprocessing.Manager()
     ''' Import FaceMesh after creating manager to avoid double instance creation '''
     import FaceMesh
     fm = FaceMesh.FaceMesh(angle_coefficient=1)
@@ -150,10 +140,18 @@ if __name__ == "__main__":
     tm.start()
     cv2.setMouseCallback("Wheelchair", tm.clickEvent)
 
-    ''' Process Creation '''
+    ''' Process, Queue, and Event Creation '''
+    image_queue = manager.Queue(maxsize=10)
+    fr_result_queue = manager.Queue(maxsize=1)
+    authenticated_event = manager.Event()
+
     fr_process = multiprocessing.Process(
         target=fr_worker, args=(image_queue, fr_result_queue, authenticated_event))
     fr_process.start()
+
+    pitch_yaw_queue = manager.Queue(maxsize=1)
+    obstacle_detected_event = manager.Event()
+    control_wheelchair_event = manager.Event()
 
     cm_process = multiprocessing.Process(target=cm_worker, args=(
         pitch_yaw_queue, obstacle_detected_event, control_wheelchair_event))
