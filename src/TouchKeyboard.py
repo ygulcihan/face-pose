@@ -79,13 +79,14 @@ class TouchKeyboard:
                     correctedY < button.pos[1] + button.size[1] and correctedY > button.pos[1]):
 
                 if event == cv2.EVENT_LBUTTONDOWN:
+                    button.lastClickTime = time.time()
+                    button.highlighted = True
+
                     if button.text == "<-":
                         self.typedText = self.typedText[:-1]
                     elif button.text == "Enter":
                         continue
                     else:
-                        button.lastClickTime = time.time()
-                        button.highlighted = True
                         if len(self.typedText) < self.maxTextLength:
                             if len(self.typedText) == 0:
                                 self.typedText = button.text
