@@ -3,17 +3,16 @@ import serial.tools.list_ports
 import time
 
 
-class CommManager:
+class CommManager(object):
     ser = None
     run = False
     obstacleDetected = False
-    finderEntryTime = 0
+    finderEntryTime = 0    
     
-    __lastPrintTime = 0
-
-    def __init__(self):
-        self.run = False
-        self.obstacleDetected = False
+    def __new__(cls):
+        if not hasattr(cls, "instance"):
+            cls.instance = super(CommManager, cls).__new__(cls)
+        return cls.instance
         
     def start(self):
         port = self.findCOMPort()

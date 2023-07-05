@@ -38,7 +38,7 @@ class Button:
         return img
 
 
-class TouchMenu:
+class TouchMenu(object):
 
     size = (150, 400)
     imageSize = (600, 400)
@@ -53,6 +53,11 @@ class TouchMenu:
     cancelButtonSize = 80
     addUserWindowTitle = "Add new user"
     addUserState = "name"  # "name", "password", "done", or "error"
+
+    def __new__(cls):
+        if not hasattr(cls, "instance"):
+            cls.instance = super(TouchMenu, cls).__new__(cls)
+        return cls.instance
 
     def __init__(self):
         self.touchKeyboard = TouchKeyboard.TouchKeyboard()

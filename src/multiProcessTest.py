@@ -3,7 +3,8 @@ import cv2
 import FaceRecognizer
 import multiprocessing
 
-fr = FaceRecognizer.FaceRecognizer(low_res=True, number_of_frames_to_skip=0)
+fr = FaceRecognizer.FaceRecognizer()
+fr.low_res = True
 
 fr.addUser("Yigit", "train_img/yigit.jpg")
 fr.addUser("Yigit", "train_img/yigit-gozluklu.jpg")

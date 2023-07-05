@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 
-class FaceMesh:
+class FaceMesh(object):
 
     detect_confidence = 0.7
     track_confidence = 0.8
@@ -18,29 +18,26 @@ class FaceMesh:
     calibrationEntryTime = -1
     calibrationInstruction = "Position your head neutrally"
 
-    __angle_coefficient__ = 1.0
+    angle_coefficient = 1.0
 
     __FACE_OUTLINE_INDEXES__ = [33, 263, 1, 61, 291, 199]
     __FACE_MESH__ = mp.solutions.face_mesh.FaceMesh(min_detection_confidence=detect_confidence,
                                                     min_tracking_confidence=track_confidence)
     __DRAWING_SPEC__ = mp.solutions.drawing_utils.DrawingSpec(
         thickness=1, circle_radius=1)
+    
+    def __new__(cls):
+        if not hasattr(cls, "instance"):
+            cls.instance = super(FaceMesh, cls).__new__(cls)
+        return cls.instance
 
-    def __init__(self, angle_coefficient=1.0):
-        self.__angle_coefficient__ = angle_coefficient
-
-    def calibrate(self, image):  # self.calibrated should be set before calling this function
+    def calibrate(self, image):
 
         if self.calibrationEntryTime == -1:
             self.calibrationEntryTime = time.time()
             self.yawOffset = 0
             self.pitchOffset = 0
-
-        cv2.putText(image, "Calibrating...", (400, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-        
-        cv2.putText(image, self.calibrationInstruction, (50, 100),
-                    cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+            self.calibrationInstruction = "Position your head neutrally"
         
         elapsedTime = time.time() - self.calibrationEntryTime
         
@@ -53,9 +50,10 @@ class FaceMesh:
             self.yawOffset = self.yaw * -1.0
             self.calibrationEntryTime = -1
             self.calibrated = True
-        return image
+            
+        return self.calibrationInstruction
 
-    def eventLoop(self, image):
+    def process(self, image):
 
         image = cv2.resize(image, (683, 360))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -115,9 +113,9 @@ class FaceMesh:
 
     def __calculateHeadRotation(self, ratios):
         self.pitch = np.round(
-            ratios[0] * 180 * np.pi * self.__angle_coefficient__) + self.pitchOffset
+            ratios[0] * 180 * np.pi * self.angle_coefficient) + self.pitchOffset
         self.yaw = np.round(
-            ratios[1] * 180 * np.pi * self.__angle_coefficient__) + self.yawOffset
+            ratios[1] * 180 * np.pi * self.angle_coefficient) + self.yawOffset
 
     def getYawPitch(self):
         return self.yaw, self.pitch
@@ -129,7 +127,7 @@ cap = cv2.VideoCapture(0)
 
 while True:
     image = cv2.flip(cap.read()[1], 1)  # Flip the image horizontally
-    __angle_coefficient__ = 1.0
+    angle_coefficient = 1.0
     eventLoop(image)
     # Add the text on the image
     cv2.putText(image, "Pitch: " + str(int(pitch)), (450, 50),

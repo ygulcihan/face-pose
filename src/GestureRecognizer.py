@@ -6,12 +6,13 @@ from enum import Enum
 
 
 class Gesture(Enum):
+    NONE = 0
     BROW_RAISE = 1
     BLINK = 2
 
 
-class GestureRecognizer:
-    __print__ = False
+class GestureRecognizer(object):
+
     __brow_raise_threshold__ = 10000
     __normalized_ratio__ = 0
     __ratioList__ = []
@@ -27,22 +28,19 @@ class GestureRecognizer:
     calibrationInstruction = "    Raise your eyebrows"
     eyebrowRaisedRatio = 0
     eyebrowLoweredRatio = 0
-
-    def __init__(self, print=False):
-        self.__print__ = print
+    print = False
+    
+    def __new__(cls):
+        if not hasattr(cls, "instance"):
+            cls.instance = super(GestureRecognizer, cls).__new__(cls)
+        return cls.instance
         
-    def calibrate (self, image):
+    def calibrate (self):
         if self.browCalibrationEntryTime == -1:
             self.browCalibrationEntryTime = time.time()
             self.eyebrowRaisedRatio = 0
             self.eyebrowLoweredRatio = 0
             self.calibrationInstruction = "    Raise your eyebrows"
-
-        cv2.putText(image, "Calibrating...", (400, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-        
-        cv2.putText(image, self.calibrationInstruction, (50, 100),
-                    cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
         
         elapsedTime = time.time() - self.browCalibrationEntryTime
         
@@ -64,7 +62,7 @@ class GestureRecognizer:
                 self.browCalibrationEntryTime = -1
                 self.browThresholdCalibrated = True
                 
-        return image
+        return self.calibrationInstruction
 
 
     def setBrowRaiseThreshold(self, threshold):
@@ -135,7 +133,7 @@ class GestureRecognizer:
         else:
             self.brow_raised = False
 
-        if self.__print__:
+        if self.print:
             print(f"Ratio: {int(distRatio)} | Corrected: {int(correctedRatio)} | Normalized: {int(self.__normalized_ratio__)} | Threshold: {self.__brow_raise_threshold__} | Raised: {self.brow_raised}")
 
     def __findDistance(self, p1, p2):

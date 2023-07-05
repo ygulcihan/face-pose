@@ -2,9 +2,10 @@ import cv2
 import face_recognition
 import User
 
-class FaceRecognizer:
+class FaceRecognizer(object):
 
-    __low_res = False
+    low_res = False
+    nrOfFramesToSkip = 0
 
     __image_face_locations = []
     __unknown_face_locations = []
@@ -13,14 +14,14 @@ class FaceRecognizer:
     __users = []
     __matches = []
     __activeUserIndex = -1
-    __nrOfFramesToSkip = 3
     __skipped_frames = 0
 
     __activeUser = None
-
-    def __init__(self, low_res=False, number_of_frames_to_skip=7):
-        self.__low_res = low_res
-        self.__nrOfFramesToSkip = number_of_frames_to_skip
+    
+    def __new__(cls):
+        if not hasattr(cls, "instance"):
+            cls.instance = super(FaceRecognizer, cls).__new__(cls)
+        return cls.instance
 
     def addUser(self, name, image_path): #TODO: Save users to file and read them on startup
         newUser = User.User(name, image_path)
@@ -31,13 +32,13 @@ class FaceRecognizer:
         
         self.__reset_vars()
 
-        if self.__skipped_frames < self.__nrOfFramesToSkip:
+        if self.__skipped_frames < self.nrOfFramesToSkip:
             self.__skipped_frames += 1
             return
         
         self.__skipped_frames = 0
                 
-        if self.__low_res:
+        if self.low_res:
             image = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
 
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
@@ -77,7 +78,7 @@ class FaceRecognizer:
                 self.__unknown_face_locations.append(location)
 
             for unknown in self.__unknown_face_locations:
-                if self.__low_res:
+                if self.low_res:
                     cv2.rectangle(image, (unknown[3] * 4, unknown[0] * 4),
                                   (unknown[1] * 4, unknown[2] * 4), (0, 0, 0), -1)
                 else:
