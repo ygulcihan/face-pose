@@ -32,7 +32,10 @@ class FaceMesh(object):
         return cls.instance
 
     def calibrate(self, image):
-
+        
+        pitchOffset = 0
+        yawOffset = 0
+        
         if self.calibrationEntryTime == -1:
             self.calibrationEntryTime = time.time()
             self.yawOffset = 0
@@ -46,12 +49,11 @@ class FaceMesh(object):
             self.calibrationInstruction = "           Stay still"
 
         if (elapsedTime >= 8 and elapsedTime < 13):
-            self.pitchOffset = self.pitch * -1.0
-            self.yawOffset = self.yaw * -1.0
+            pitchOffset = self.pitch * -1.0
+            yawOffset = self.yaw * -1.0
             self.calibrationEntryTime = -1
-            self.calibrated = True
             
-        return self.calibrationInstruction
+        return self.calibrationInstruction, pitchOffset, yawOffset
 
     def process(self, image):
 

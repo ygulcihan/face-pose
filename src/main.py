@@ -14,6 +14,8 @@ def fr_worker(image_to_process, active_user, authenticated_event):
     fr = FaceRecognizer.FaceRecognizer()
     fr.addUser("Yigit", "train_img/yigit.jpg")
     fr.addUser("Yigit", "train_img/yigit-gozluklu.jpg")
+    fr.addUser("Seyit", "train_img/seyit.jpg")
+    fr.addUser("Seyit", "train_img/seyit2.jpg")
     fr.low_res = True
     while True:
         if not authenticated_event.is_set():
@@ -21,11 +23,12 @@ def fr_worker(image_to_process, active_user, authenticated_event):
                 image = image_to_process.get()
                 if image is None:
                     continue
-                fr.process(image)
+                image = fr.process(image)
                 image_to_process.set(None)
 
                 if fr.getUser() is not None:
                     print(f"User Recognized: {fr.getUser().name}")
+                    image_to_process.set(image) # send single user image to fm worker
                     active_user.set(fr.getUser().name)
                     authenticated_event.set()
 
@@ -36,13 +39,16 @@ def fr_worker(image_to_process, active_user, authenticated_event):
             time.sleep(0.1)
 
 ''' Face Mesh Process Worker '''
-def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelchair_event, calibrating_event, calibration_instruction):
+def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelchair_event, calibrating_event, calibration_instruction, active_user, last_active_user):
     import FaceMesh
     import GestureRecognizer
     fm = FaceMesh.FaceMesh()
     gr = GestureRecognizer.GestureRecognizer()
     gr.print = False
     brow_raise_time = None
+    pitchOffset = 0
+    yawOffset = 0
+    newBrowRaiseThreshold = 0
     while True:
         if authenticated_event.is_set():
             try:
@@ -64,24 +70,41 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
                                 continue
                             image_to_process.set(None)
                             fm.process(image)
+                            
+                            if fm.face == []:
+                                authenticated_event.clear()
+                                calibrating_event.clear()
+                                active_user.set("")
+                                control_wheelchair_event.clear()
+                                continue
+                            
                             if not fm.calibrated:
-                                instruction = fm.calibrate(image) #instructions
+                                instruction, pitchOffset, yawOffset = fm.calibrate(image) #instructions
                                 calibration_instruction.set(instruction)
                             elif not gr.browThresholdCalibrated:
                                 gr.process(fm.face, fm.pitch, fm.yaw, fm.pitchOffset, fm.yawOffset)
-                                instruction = gr.calibrate() #instructions
+                                instruction, newBrowRaiseThreshold = gr.calibrate() #instructions
                                 calibration_instruction.set(instruction)
                             else:
                                 calibration_instruction.set("   Calibration Complete")
-                                time.sleep(1)
+                                
+                                if last_active_user.get() != active_user.get():
+                                    last_active_user.set(active_user.get())
+                                    fm.pitchOffset = pitchOffset
+                                    fm.yawOffset = yawOffset
+                                    fm.calibrated = True
+                                    gr.setBrowRaiseThreshold(newBrowRaiseThreshold)
+                                    gr.browThresholdCalibrated = True
+                                    
+                                time.sleep(1)                                    
                                 calibrating_event.clear()                            
-                    else:    
+                    else:                        
                         fm.process(image)
 
                         if fm.face == []:
                             authenticated_event.clear()
                             calibrating_event.clear()
-                            # activeUser = ""
+                            active_user.set("")
                             control_wheelchair_event.clear()
                             continue
 
@@ -150,25 +173,15 @@ if __name__ == "__main__":
     ''' Global variables '''
     run = True
     image = None
-    wcControlLastToggled = 0
-    lastActiveUser = None
 
     ''' Process, Queue, and Event Creation '''
     # image_queue = manager.Queue(maxsize=10)
     image_to_process = manager.Value(np.ndarray, None)
     pitch_yaw = manager.Value(tuple, (0, 0))
     active_user = manager.Value(str, "")
+    last_active_user = manager.Value(str, None)
     calibration_instruction = manager.Value(str, "")
     
-    class DebugVars:
-        def __init__(self):
-            self.image_to_process = None
-            self.pitch_yaw = None
-            self.active_user = None
-            self.calibration_instruction = None
-    
-    debug = DebugVars()
-
     authenticated_event = manager.Event()
     calibrating_event = manager.Event()
     obstacle_detected_event = manager.Event()
@@ -178,7 +191,7 @@ if __name__ == "__main__":
         target=fr_worker, name="fr_process", args=(image_to_process, active_user, authenticated_event))
 
     fm_process = multiprocessing.Process(
-        target=fm_worker, name="fm_process", args=(image_to_process, authenticated_event, pitch_yaw, control_wheelchair_event, calibrating_event, calibration_instruction))
+        target=fm_worker, name="fm_process", args=(image_to_process, authenticated_event, pitch_yaw, control_wheelchair_event, calibrating_event, calibration_instruction, active_user, last_active_user))
 
     cm_process = multiprocessing.Process(
         target=cm_worker, name="cm_process", args=(pitch_yaw, obstacle_detected_event, control_wheelchair_event))
@@ -218,11 +231,6 @@ if __name__ == "__main__":
     ''' Main Loop '''
     while run:
         
-        debug.image_to_process = image_to_process.get()
-        debug.pitch_yaw = pitch_yaw.get()
-        debug.active_user = active_user.get()
-        debug.calibration_instruction = calibration_instruction.get()
-        
         image = cap.getFrame()
         image = cv2.resize(image, (600, 400))
         
@@ -242,8 +250,7 @@ if __name__ == "__main__":
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (50, 50, 255), 2)
                 
         else:
-            if (lastActiveUser != active_user.get()):
-                lastActiveUser = active_user.get()
+            if (last_active_user.get() != active_user.get()):
                 if (not calibrating_event.is_set()):
                     toggleCalibrate()
 

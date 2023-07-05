@@ -84,6 +84,8 @@ class FaceRecognizer(object):
                 else:
                     cv2.rectangle(
                         image, (unknown[3], unknown[0]), (unknown[1], unknown[2]), (0, 0, 0), -1)
+        
+        return image
                     
 
     def __reset_vars(self):
