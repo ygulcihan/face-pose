@@ -32,7 +32,8 @@ def fr_worker(image_to_process, active_user, authenticated_event):
             except Exception as e:
                 print("fr worker exception: ", e)
                 continue
-
+        else:
+            time.sleep(0.1)
 
 ''' Face Mesh Process Worker '''
 def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelchair_event, calibrating_event, calibration_instruction):
@@ -108,6 +109,8 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
             except Exception as e:
                 print("fm worker exception: ", e)
                 continue
+        else:
+            time.sleep(0.1)
 
 
 ''' Communication Manager Process Worker '''
@@ -127,6 +130,8 @@ def cm_worker(pitch_yaw, obstacle_detected_event, control_wheelchair_event):
             except Exception as e:
                 print("cm worker exception: ", e)
                 continue
+        else:
+            time.sleep(0.1)
 
 
 ''' Main Process '''
