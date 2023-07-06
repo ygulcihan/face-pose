@@ -59,6 +59,7 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
 
                 try:
                     if calibrating_event.is_set():
+                        control_wheelchair_event.clear()
                         fm.calibrated = False
                         gr.browThresholdCalibrated = False
                         fm.calibrationEntryTime = -1
@@ -96,11 +97,13 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
                                 
                                 if last_active_user.get() != active_user.get():
                                     last_active_user.set(active_user.get())
-                                    fm.pitchOffset = pitchOffset
-                                    fm.yawOffset = yawOffset
-                                    gr.setBrowRaiseThreshold(newBrowRaiseThreshold)
                                     
-                                time.sleep(1)                                    
+                                fm.pitchOffset = pitchOffset
+                                fm.yawOffset = yawOffset
+                                gr.setBrowRaiseThreshold(newBrowRaiseThreshold)
+                                    
+                                time.sleep(1)
+                                calibration_instruction.set("")                        
                                 calibrating_event.clear() 
                                                 
                     else:                        
@@ -145,20 +148,35 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
 def cm_worker(pitch_yaw, obstacle_detected_event, control_wheelchair_event):
     import CommManager
     cm = CommManager.CommManager()
+    cm.log_to_console = False
     cm.start()
+    
+    stopMessageSent = False
     while True:
         if control_wheelchair_event.is_set():
             try:
-                pitch, yaw = pitch_yaw.get()
-                obstacleDetected = cm.eventLoop(pitch, yaw)
-                if obstacleDetected and not obstacle_detected_event.is_set():
+                if stopMessageSent:
+                    stopMessageSent = False
+                
+                fPitch, fYaw = pitch_yaw.get()
+                pitch = int(fPitch)
+                yaw = int(fYaw)
+                cm.eventLoop(pitch, yaw)
+                if cm.obstacleDetected and not obstacle_detected_event.is_set():
                     obstacle_detected_event.set()
-                elif not obstacleDetected and obstacle_detected_event.is_set():
+                elif not cm.obstacleDetected and obstacle_detected_event.is_set():
                     obstacle_detected_event.clear()
             except Exception as e:
-                print("cm worker exception: ", e)
+                if Exception is PermissionError:
+                    print("Permission Error: COM Port is disconnected or in use")
+                else:
+                    print("cm worker exception: ", e)
                 continue
         else:
+            if not stopMessageSent:
+                stopMessageSent = True
+                for _ in range(3):
+                    cm.eventLoop(0, 0)
             time.sleep(0.1)
 
 

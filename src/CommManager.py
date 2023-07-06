@@ -2,12 +2,11 @@ import serial
 import serial.tools.list_ports
 import time
 
-
 class CommManager(object):
     ser = None
-    run = False
     obstacleDetected = False
-    finderEntryTime = 0    
+    finderEntryTime = 0   
+    log_to_console = False 
     
     def __new__(cls):
         if not hasattr(cls, "instance"):
@@ -20,7 +19,7 @@ class CommManager(object):
             self.ser = None
         try:
             self.ser = serial.Serial(port, 115200, timeout=0.1)
-            time.sleep(1)
+            time.sleep(2)
 
         except:
             print('Failed to connect to port ' + port)
@@ -36,12 +35,6 @@ class CommManager(object):
         txMsg = "S:" + str(speed) + ",P:" + str(position) + "\n"
         self.ser.write(txMsg.encode(encoding='ascii'))
 
-    def setRun(self, run):
-        if (run != True or run != False):
-            raise ValueError("Invalid run value, use True or False")
-        else:
-            self.run = run
-
     def findCOMPort(self):
         ports = serial.tools.list_ports.comports(include_links=False)
         self.finderEntryTime = time.time()
@@ -55,14 +48,14 @@ class CommManager(object):
                     continue
             
             try:
-                ser = serial.Serial(port.device, 115200, timeout=0.1, write_timeout=2)
-                time.sleep(3)
+                ser = serial.Serial(port.device, 115200, timeout=0.2, write_timeout=1)
+                time.sleep(2)
             except:
                 print('Failed to open port ' + port.device)
                 continue
             if ser is not None:
                 chkMsg = "CHK\n"
-                for i in range(2):
+                for _ in range(2):
                     try:
                         ser.write(chkMsg.encode("ascii"))
                     except:
@@ -81,10 +74,14 @@ class CommManager(object):
                     else:
                         continue
         return None
-    def eventLoop(self, speed, position):
+    
+    def eventLoop(self, pSpeed, pPosition):
         
         if (self.ser.port is None):
             return
+        
+        self.ser.reset_input_buffer()
+        self.ser.reset_output_buffer()
         
         rxMsg = self.ser.read_until(b'\n').decode(encoding='ascii')
         if (rxMsg == "OD\n"):
@@ -92,7 +89,11 @@ class CommManager(object):
 
         elif (rxMsg == "OC\n"):
             self.obstacleDetected = False
+            
+        speed = pSpeed * -1 if pSpeed < 0 else 0
 
-        self.__sendValues(speed=speed, position=position)
-
-        return self.obstacleDetected
+        self.__sendValues(speed=speed, position=pPosition)
+        
+        if self.log_to_console:
+            print("Sent: " + "S:" + str(speed) + ",P:" + str(pPosition))
+            print("Received: " + rxMsg + "\n")
