@@ -76,18 +76,20 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
                                 calibrating_event.clear()
                                 active_user.set("")
                                 control_wheelchair_event.clear()
+                                fm.calibrated = False
+                                gr.browThresholdCalibrated = False
+                                fm.calibrationEntryTime = -1
+                                gr.browCalibrationEntryTime = -1
                                 continue
                             
                             if not fm.calibrated:
                                 instruction, pitchOffset, yawOffset = fm.calibrate(image) #instructions
                                 calibration_instruction.set(instruction)
-                                fm.calibrated = True
 
                             elif not gr.browThresholdCalibrated:
                                 gr.process(fm.face, fm.pitch, fm.yaw, fm.pitchOffset, fm.yawOffset)
                                 instruction, newBrowRaiseThreshold = gr.calibrate() #instructions
                                 calibration_instruction.set(instruction)
-                                gr.browThresholdCalibrated = True
 
                             else:
                                 calibration_instruction.set("   Calibration Complete")
@@ -100,10 +102,7 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
                                     
                                 time.sleep(1)                                    
                                 calibrating_event.clear() 
-                                
-                        if not fm.calibrated or gr.browThresholdCalibrated:
-                            fm.calibrated = False
-                            gr.browThresholdCalibrated = False                           
+                                                
                     else:                        
                         fm.process(image)
 

@@ -52,6 +52,7 @@ class FaceMesh(object):
             pitchOffset = self.pitch * -1.0
             yawOffset = self.yaw * -1.0
             self.calibrationEntryTime = -1
+            self.calibrated = True
             
         return self.calibrationInstruction, pitchOffset, yawOffset
 

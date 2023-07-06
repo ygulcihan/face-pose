@@ -60,6 +60,7 @@ class GestureRecognizer(object):
                 print("Lowered ratio: " + str(self.eyebrowLoweredRatio))
                 newThreshold = self.eyebrowLoweredRatio + ((self.eyebrowRaisedRatio - self.eyebrowLoweredRatio) * 70.0 / 100.0)
                 print("New threshold: " + str(newThreshold))
+                self.browThresholdCalibrated = True
                 self.browCalibrationEntryTime = -1
                 
         return self.calibrationInstruction, newThreshold
