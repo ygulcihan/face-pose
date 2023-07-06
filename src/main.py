@@ -9,15 +9,18 @@ import time
 import multiprocessing
 
 ''' Face Recognition Process Worker '''
-def fr_worker(image_to_process, active_user, authenticated_event):
+def fr_worker(image_to_process, active_user, authenticated_event, new_user_added_event):
     import FaceRecognizer
     fr = FaceRecognizer.FaceRecognizer()
-    fr.addUser("Yigit", "train_img/yigit.jpg")
-    fr.addUser("Yigit", "train_img/yigit-gozluklu.jpg")
-    fr.addUser("Seyit", "train_img/seyit.jpg")
-    fr.addUser("Seyit", "train_img/seyit2.jpg")
     fr.low_res = True
+    fr.train()
     while True:
+        
+        if new_user_added_event.is_set():
+            fr.train()
+            new_user_added_event.clear()
+
+        
         if not authenticated_event.is_set():
             try:
                 image = image_to_process.get()
@@ -197,6 +200,7 @@ if __name__ == "__main__":
     ''' Global variables '''
     run = True
     image = None
+    addNewUser = False
 
     ''' Process, Queue, and Event Creation '''
     # image_queue = manager.Queue(maxsize=10)
@@ -210,9 +214,10 @@ if __name__ == "__main__":
     calibrating_event = manager.Event()
     obstacle_detected_event = manager.Event()
     control_wheelchair_event = manager.Event()
+    new_user_added_event = manager.Event()
 
     fr_process = multiprocessing.Process(
-        target=fr_worker, name="fr_process", args=(image_to_process, active_user, authenticated_event))
+        target=fr_worker, name="fr_process", args=(image_to_process, active_user, authenticated_event, new_user_added_event))
 
     fm_process = multiprocessing.Process(
         target=fm_worker, name="fm_process", args=(image_to_process, authenticated_event, pitch_yaw, control_wheelchair_event, calibrating_event, calibration_instruction, active_user, last_active_user))
@@ -237,12 +242,17 @@ if __name__ == "__main__":
 
         elif authenticated_event.is_set():
             calibrating_event.set()
+        
+    def addNewUserCb():
+        global addNewUser
+        addNewUser = True
 
     ''' Module configurations & initializations '''
     cv2.setMouseCallback("Wheelchair", tm.clickEvent)
 
     tm.buttonHeight = 100
     tm.imageSize = (600, 400)
+    tm.addButton("Add User", colorR=(0, 155, 0), onClick=addNewUserCb)
     tm.addButton("Calibrate", onClick=toggleCalibrate)
     tm.addButton("Settings", colorR=(0, 0, 255), onClick=tm.settings)
     tm.addButton("  Exit", colorR=(255, 0, 0), onClick=stop)
@@ -256,6 +266,12 @@ if __name__ == "__main__":
     while run:
         
         image = cap.getFrame()
+        
+        if addNewUser:
+            tm.addUser(image)
+            new_user_added_event.set()
+            addNewUser = False
+        
         image = cv2.resize(image, (600, 400))
         
         if image_to_process.get() is None:

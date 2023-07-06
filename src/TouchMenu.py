@@ -3,7 +3,7 @@ import numpy as np
 import TouchKeyboard
 import time
 import Settings
-
+import FaceRecognizer
 
 class Button:
 
@@ -53,6 +53,7 @@ class TouchMenu(object):
     cancelButtonSize = 80
     addUserWindowTitle = "Add new user"
     addUserState = "name"  # "name", "password", "done", or "error"
+    newUserName = ""
 
     def __new__(cls):
         if not hasattr(cls, "instance"):
@@ -90,7 +91,8 @@ class TouchMenu(object):
             if (event) == cv2.EVENT_LBUTTONDOWN:
                 for button in self.buttons:
                     if (y > button.yTop and y < button.yBottom):
-                        button.onClickEvent()
+                        if button.onClickEvent is not None:
+                            button.onClickEvent()
 
     def calibrate(self):
         print("Calibrate")
@@ -109,28 +111,22 @@ class TouchMenu(object):
             if event == cv2.EVENT_LBUTTONDOWN:
                 if self.addUserState == "name":
                     if len(self.touchKeyboard.typedText) > 0:
-                        self.addUserState = "password"
+                        self.newUserName = self.touchKeyboard.typedText
                         self.touchKeyboard.typedText = ""
+                        self.addUserState = "password"
                 elif self.addUserState == "password":
                     if len(self.touchKeyboard.typedText) > 0:
                         if (self.touchKeyboard.typedText == Settings.password or self.touchKeyboard.typedText == Settings.masterPassword):
+                            self.touchKeyboard.typedText = ""
                             self.addUserState = "done"
                         else:
+                            self.touchKeyboard.typedText= ""
                             self.addUserState = "error"
 
         else:
             self.touchKeyboard.clickEvent(event, x, y, flags, param)
 
-    def getInputWindowImage(self, line1, line1Color, line2):
-        img = np.vstack(
-            (self.textBoxImg, self.touchKeyboard.getKeyboardImage()))
-        cv2.putText(img, line1, (10, 50),
-                    cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, line1Color, 2)
-        cv2.putText(img, line2, (420, 110),
-                    cv2.FONT_HERSHEY_PLAIN, 3.2, (255, 255, 255), 2)
-        return img
-
-    def addUser(self):
+    def addUser(self, user_image):
         cv2.namedWindow(self.addUserWindowTitle)
         cv2.moveWindow(self.addUserWindowTitle, -2, 0)
         cv2.setMouseCallback(self.addUserWindowTitle, self.addUserTouchEvent)
@@ -145,7 +141,8 @@ class TouchMenu(object):
                 passwordField = "*" * len(self.touchKeyboard.typedText)
                 img = self.getInputWindowImage("Enter password", (135, 0, 0), passwordField)
             elif self.addUserState == "done":
-                i = 0 # Add User to FaceRecognizer
+                fr = FaceRecognizer.FaceRecognizer()
+                fr.newUser(self.newUserName, user_image)
                 img = self.getInputWindowImage("User added successfully", (0, 175, 0), "")
                 cv2.imshow(self.addUserWindowTitle, img)
                 cv2.waitKey(1)
@@ -165,6 +162,15 @@ class TouchMenu(object):
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 cv2.destroyWindow(self.addUserWindowTitle)
                 break
+            
+    def getInputWindowImage(self, line1, line1Color, line2):
+            img = np.vstack(
+                (self.textBoxImg, self.touchKeyboard.getKeyboardImage()))
+            cv2.putText(img, line1, (10, 50),
+                        cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, line1Color, 2)
+            cv2.putText(img, line2, (420, 110),
+                        cv2.FONT_HERSHEY_PLAIN, 3.2, (255, 255, 255), 2)
+            return img
 
 
 if __name__ == "__main__":

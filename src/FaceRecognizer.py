@@ -6,8 +6,8 @@ import os
 class FaceRecognizer(object):
 
     low_res = False
-    nrOfFramesToSkip = 0
 
+    __user_images_path = os.getcwd() + os.sep + "user_images"
     __image_face_locations = []
     __unknown_face_locations = []
     __image_face_encodings = []
@@ -15,7 +15,6 @@ class FaceRecognizer(object):
     __users = []
     __matches = []
     __activeUserIndex = -1
-    __skipped_frames = 0
 
     __activeUser = None
     
@@ -23,22 +22,45 @@ class FaceRecognizer(object):
         if not hasattr(cls, "instance"):
             cls.instance = super(FaceRecognizer, cls).__new__(cls)
         return cls.instance
+    
+    def __getUserDirectories(self, path):
+        subdir_list = []
+        
+        scan_result = os.scandir(path)
+        for res in scan_result:
+            if res.is_dir():
+                subdir_list.append(res)
+                
+        return subdir_list
+    
+    def train(self):
+        for user_dir in self.__getUserDirectories(self.__user_images_path):
+            image_path = self.__user_images_path + os.sep + user_dir.name
+            
+            for user_img in os.scandir(user_dir):
+                self.encodeUser(user_dir.name, image_path + os.sep + user_img.name)
+                
+    def newUser(self, name: str, image):
+        for dir in self.__getUserDirectories(self.__user_images_path):
+            if dir.name == name: # User directory already exists
+                image_count = os.listdir(dir).__len__()
+                os.chdir(self.__user_images_path + os.sep + name)
+                cv2.imwrite(filename=str(image_count + 1) + ".jpg", img=image)
+                return
+        newDirPath = self.__user_images_path + os.sep + name
+        os.mkdir(newDirPath)
+        os.chdir(newDirPath)
+        cv2.imwrite(filename="1.jpg", img=image)
 
-    def addUser(self, name, image_path): #TODO: Save users to file and read them on startup
-        newUser = User.User(name, image_path)
-        self.__users.append(newUser)
-        self.__known_face_encodings.append(newUser.face_encoding)
+    def encodeUser(self, name, image_path):
+        user = User.User(name, image_path)
+        self.__users.append(user)
+        self.__known_face_encodings.append(user.face_encoding)
 
     def process(self, image):
         
         self.__reset_vars()
-
-        if self.__skipped_frames < self.nrOfFramesToSkip:
-            self.__skipped_frames += 1
-            return
-        
-        self.__skipped_frames = 0
-                
+                        
         if self.low_res:
             image = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
 
@@ -99,25 +121,23 @@ class FaceRecognizer(object):
     def getUser(self):
         return self.__activeUser
         
-'''        
-fr = FaceRecognizer(low_res=True)
+if __name__ == "__main__":
+    fr = FaceRecognizer()
+    fr.train()
+    pass
 
-cap = cv2.VideoCapture(0)
+    '''
+    cap = cv2.VideoCapture(0)
 
-fr.addUser("Yigit", "train_img/yigit.jpg")
-fr.addUser("Ahmet", "train_img/ahmet.jpg")
-fr.addUser("Seyit", "train_img/seyit.jpg")
-fr.addUser("Arda", "train_img/arda.jpg")
-
-while True:
-    image = cap.read()[1]
-    image = fr.eventLoop(image)
-    cv2.imshow("Test", image)
-    
-    if fr.__activeUser != None:
-        print(fr.__activeUser.name)
-    
-    if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Test", cv2.WND_PROP_VISIBLE) == False:
-        cap.release()
-        break
-'''
+    while True:
+        image = cap.read()[1]
+        image = fr.eventLoop(image)
+        cv2.imshow("Test", image)
+        
+        if fr.__activeUser != None:
+            print(fr.__activeUser.name)
+        
+        if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Test", cv2.WND_PROP_VISIBLE) == False:
+            cap.release()
+            break
+    '''
