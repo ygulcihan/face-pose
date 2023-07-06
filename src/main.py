@@ -303,7 +303,10 @@ if __name__ == "__main__":
             cm_process.terminate()
             fm_process.terminate()
             break
-        if cv2.waitKey(1) & 0xFF == ord('q') or cv2.waitKey(1) & 0xFF == ord('Q') or cv2.waitKey(1) & 0xFF == 27:  # ESC or q to exit
+        
+        key = cv2.waitKey(1) & 0xFF
+        
+        if key == ord('q') or key == ord('Q') or key == 27:  # ESC or q to exit
             fr_process.terminate()
             cm_process.terminate()
             fm_process.terminate()
