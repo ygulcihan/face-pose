@@ -31,7 +31,7 @@ class FaceMesh(object):
             cls.instance = super(FaceMesh, cls).__new__(cls)
         return cls.instance
 
-    def calibrate(self, image):
+    def calibrate(self):
         
         pitchOffset = 0
         yawOffset = 0
@@ -62,11 +62,11 @@ class FaceMesh(object):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False  # To pass by reference
         results = self.__FACE_MESH__.process(image)
-        image.flags.writeable = True
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         img_h = image.shape[0]
         img_w = image.shape[1]
+        
+        del image
 
         face_3d = []
         face_2d = []
@@ -78,8 +78,6 @@ class FaceMesh(object):
 
                 # Get the indexes of each facial landmark
                 for idx, lm in enumerate(face_landmarks.landmark):
-                    if idx == 1:
-                        nose_2d = (lm.x * img_w, lm.y * img_h)
 
                     x = int(lm.x * img_w)
                     y = int(lm.y * img_h)
@@ -124,23 +122,23 @@ class FaceMesh(object):
         return self.yaw, self.pitch
 
 
-'''
-# For testing purposes
-cap = cv2.VideoCapture(0)
+if __name__ == "__main__":  # For testing purposes
 
-while True:
-    image = cv2.flip(cap.read()[1], 1)  # Flip the image horizontally
-    angle_coefficient = 1.0
-    eventLoop(image)
-    # Add the text on the image
-    cv2.putText(image, "Pitch: " + str(int(pitch)), (450, 50),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-    cv2.putText(image, "Yaw: " + str(int(yaw)), (450, 100),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-    cv2.imshow("Face Mesh", image)
+    cap = cv2.VideoCapture(0)
+    fm = FaceMesh()
 
-    pressedKey = cv2.waitKey(1) & 0xFF
+    while True:
+        image = cv2.flip(cap.read()[1], 1)  # Flip the image horizontally
+        angle_coefficient = 1.0
+        fm.process(image)
+        # Add the text on the image
+        cv2.putText(image, "Pitch: " + str(int(fm.pitch)), (450, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        cv2.putText(image, "Yaw: " + str(int(fm.yaw)), (450, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        cv2.imshow("Face Mesh", image)
 
-    if pressedKey == ord('q') or pressedKey == 27 or cv2.getWindowProperty("Face Mesh", cv2.WND_PROP_VISIBLE) < 1:
-        break
-'''
+        pressedKey = cv2.waitKey(1) & 0xFF
+
+        if pressedKey == ord('q') or pressedKey == 27 or cv2.getWindowProperty("Face Mesh", cv2.WND_PROP_VISIBLE) < 1:
+            break

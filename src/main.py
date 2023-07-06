@@ -84,12 +84,12 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
                                 continue
                             
                             if not fm.calibrated:
-                                instruction, pitchOffset, yawOffset = fm.calibrate(image) #instructions
+                                instruction, pitchOffset, yawOffset = fm.calibrate()
                                 calibration_instruction.set(instruction)
 
                             elif not gr.browThresholdCalibrated:
                                 gr.process(fm.face, fm.pitch, fm.yaw, fm.pitchOffset, fm.yawOffset)
-                                instruction, newBrowRaiseThreshold = gr.calibrate() #instructions
+                                instruction, newBrowRaiseThreshold = gr.calibrate()
                                 calibration_instruction.set(instruction)
 
                             else:
@@ -131,8 +131,9 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
                                     control_wheelchair_event.set()
                                 else:
                                     control_wheelchair_event.clear()
-                                    
+
                                 brow_raise_time = None
+                                
                 except Exception as e:
                     print("fm calibration exception: ", e)
                     
@@ -258,13 +259,9 @@ if __name__ == "__main__":
         image = cv2.resize(image, (600, 400))
         
         if image_to_process.get() is None:
+            image.flags.writeable = False   # To pass by reference
             image_to_process.set(image)
-
-        '''
-        if image_queue.full():
-            image_queue.get()   # remove oldest image from queue if full
-        image_queue.put(image)
-        '''
+            image.flags.writeable = True
 
         if (not authenticated_event.is_set()):
             cv2.putText(image, "Facial Recognition in Progress", (10, 50),

@@ -1,6 +1,7 @@
 import cv2
 import face_recognition
 import User
+import os
 
 class FaceRecognizer(object):
 
