@@ -9,17 +9,18 @@ import time
 import multiprocessing
 
 ''' Face Recognition Process Worker '''
-def fr_worker(image_to_process, active_user, authenticated_event, new_user_added_event):
+def fr_worker(image_to_process, active_user, authenticated_event, new_user_added_event, fr_ready_event):
     import FaceRecognizer
     fr = FaceRecognizer.FaceRecognizer()
     fr.low_res = True
     fr.train()
+    fr_ready_event.set()
     while True:
-        
         if new_user_added_event.is_set():
+            fr_ready_event.clear()
             fr.train()
             new_user_added_event.clear()
-
+            fr_ready_event.set()
         
         if not authenticated_event.is_set():
             try:
@@ -202,8 +203,7 @@ if __name__ == "__main__":
     image = None
     addNewUser = False
 
-    ''' Process, Queue, and Event Creation '''
-    # image_queue = manager.Queue(maxsize=10)
+    ''' Shared Variables - Events '''
     image_to_process = manager.Value(np.ndarray, None)
     pitch_yaw = manager.Value(tuple, (0, 0))
     active_user = manager.Value(str, "")
@@ -212,12 +212,14 @@ if __name__ == "__main__":
     
     authenticated_event = manager.Event()
     calibrating_event = manager.Event()
-    obstacle_detected_event = manager.Event()
     control_wheelchair_event = manager.Event()
+    fr_ready_event = manager.Event()
     new_user_added_event = manager.Event()
+    obstacle_detected_event = manager.Event()
 
+    '''' Subprocesses '''
     fr_process = multiprocessing.Process(
-        target=fr_worker, name="fr_process", args=(image_to_process, active_user, authenticated_event, new_user_added_event))
+        target=fr_worker, name="fr_process", args=(image_to_process, active_user, authenticated_event, new_user_added_event, fr_ready_event))
 
     fm_process = multiprocessing.Process(
         target=fm_worker, name="fm_process", args=(image_to_process, authenticated_event, pitch_yaw, control_wheelchair_event, calibrating_event, calibration_instruction, active_user, last_active_user))
@@ -250,6 +252,8 @@ if __name__ == "__main__":
     ''' Module configurations & initializations '''
     cv2.setMouseCallback("Wheelchair", tm.clickEvent)
 
+    loading_screen_img = cv2.resize(cv2.imread("resources/atilim_logo_bg.jpg"), (750, 400))
+
     tm.buttonHeight = 100
     tm.imageSize = (600, 400)
     tm.addButton("Add User", colorR=(0, 155, 0), onClick=addNewUserCb)
@@ -263,8 +267,7 @@ if __name__ == "__main__":
     fm_process.start()
 
     ''' Main Loop '''
-    while run:
-        
+    while run:        
         image = cap.getFrame()
         
         if addNewUser:
@@ -311,25 +314,25 @@ if __name__ == "__main__":
                     (0, 0, 255) if calibration_instruction.get() != "   Calibration Complete" else (40, 200, 13), 2)
             
         touchmenuImg = tm.getMenuImg()
-        image = np.hstack((image, touchmenuImg))
-        cv2.imshow("Wheelchair", image)
-
-        if (not run or cv2.getWindowProperty("Wheelchair", cv2.WND_PROP_VISIBLE) == False):
-            fr_process.terminate()
-            cm_process.terminate()
-            fm_process.terminate()
-            break
+        if not fr_ready_event.is_set():
+            cv2.imshow("Wheelchair", loading_screen_img)
+        else:
+            cv2.imshow("Wheelchair", np.hstack((image, touchmenuImg)))
         
         key = cv2.waitKey(1) & 0xFF
         
         if key == ord('q') or key == ord('Q') or key == 27:  # ESC or q to exit
-            fr_process.terminate()
-            cm_process.terminate()
-            fm_process.terminate()
-            break
+            break   
 
+
+    fr_process.terminate()
     fr_process.join()
+
+    cm_process.terminate()
     cm_process.join()
+
+    fm_process.terminate()
     fm_process.join()
+
     cv2.destroyAllWindows()
     exit()
