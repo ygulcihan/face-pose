@@ -56,6 +56,21 @@ class GestureRecognizer(object):
                 if self.eyebrowLoweredRatio == 0:
                     self.eyebrowLoweredRatio = self.__normalized_ratio__
 
+                # Check if calibrated properly
+                if (self.eyebrowLoweredRatio > self.eyebrowRaisedRatio):
+                    self.eyebrowRaisedRatio = 0
+                    self.eyebrowLoweredRatio = 0
+                    self.calibrationInstruction = "    Raise your eyebrows"
+                    self.browCalibrationEntryTime = time.time()
+                    return self.calibrationInstruction, newThreshold
+                
+                elif (self.eyebrowLoweredRatio < self.eyebrowRaisedRatio + 10 and self.eyebrowLoweredRatio > self.eyebrowRaisedRatio - 10):
+                    self.eyebrowRaisedRatio = 0
+                    self.eyebrowLoweredRatio = 0
+                    self.calibrationInstruction = "    Raise your eyebrows"
+                    self.browCalibrationEntryTime = time.time()
+                    return self.calibrationInstruction, newThreshold
+
                 print("Raised ratio: " + str(self.eyebrowRaisedRatio))
                 print("Lowered ratio: " + str(self.eyebrowLoweredRatio))
                 newThreshold = self.eyebrowLoweredRatio + ((self.eyebrowRaisedRatio - self.eyebrowLoweredRatio) * 70.0 / 100.0)
