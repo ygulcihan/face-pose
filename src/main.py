@@ -3,6 +3,7 @@ import Capture
 from Capture import CaptureSource
 import cv2
 from GestureRecognizer import Gesture
+import CommManager
 import TouchMenu
 import numpy as np
 import time
@@ -192,6 +193,7 @@ if __name__ == "__main__":
     ''' Module instances '''
     cap = Capture.Capture(CaptureSource.CV2)
     tm = TouchMenu.TouchMenu()
+    cm = CommManager.CommManager()
 
     ''' Display Window Creation '''
     cv2.namedWindow("Wheelchair")
