@@ -83,12 +83,16 @@ class CommManager(object):
         self.ser.reset_input_buffer()
         self.ser.reset_output_buffer()
         
-        rxMsg = self.ser.read_until(b'\n').decode(encoding='ascii')
+        rxMsg = ""
+        
+        '''        rxMsg = self.ser.read_until(b'\n').decode(encoding='ascii')
         if (rxMsg == "OD\n"):
                 self.obstacleDetected = True
 
         elif (rxMsg == "OC\n"):
             self.obstacleDetected = False
+            
+        '''
             
         speed = pSpeed * -1 if pSpeed < 0 else 0
 
