@@ -258,7 +258,7 @@ if __name__ == "__main__":
     tm.imageSize = (600, 400)
     tm.addButton("Add User", colorR=(0, 155, 0), onClick=addNewUserCb)
     tm.addButton("Calibrate", onClick=toggleCalibrate)
-    tm.addButton("Settings", colorR=(0, 0, 255), onClick=tm.settings)
+    tm.addButton("  Home", colorR=(0, 0, 255), onClick=cm.home)
     tm.addButton("  Exit", colorR=(255, 0, 0), onClick=stop)
     tm.start()
 

@@ -7,6 +7,7 @@ class CommManager(object):
     obstacleDetected = False
     finderEntryTime = 0   
     log_to_console = False 
+    __homing = False
     
     def __new__(cls):
         if not hasattr(cls, "instance"):
@@ -34,6 +35,11 @@ class CommManager(object):
     def __sendValues(self, speed, position):
         txMsg = "S:" + str(speed) + ",P:" + str(position) + "\n"
         self.ser.write(txMsg.encode(encoding='ascii'))
+        
+    def home(self):
+        self.__homing = True
+        self.__sendValues(speed=0, position=0)
+        self.ser.write("Home\n".encode(encoding='ascii'))
 
     def findCOMPort(self):
         ports = serial.tools.list_ports.comports(include_links=False)
@@ -96,7 +102,11 @@ class CommManager(object):
             
         speed = pSpeed * -1 if pSpeed < 0 else 0
 
-        self.__sendValues(speed=speed, position=pPosition)
+        if not self.__homing:
+            self.__sendValues(speed=speed, position=pPosition)
+        else:
+            time.sleep(3.5)
+            self.__homing = False
         
         if self.log_to_console:
             print("Sent: " + "S:" + str(speed) + ",P:" + str(pPosition))
