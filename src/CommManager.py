@@ -38,7 +38,6 @@ class CommManager(object):
         
     def home(self):
         self.__homing = True
-        self.__sendValues(speed=0, position=0)
         self.ser.write("Home\n".encode(encoding='ascii'))
 
     def findCOMPort(self):

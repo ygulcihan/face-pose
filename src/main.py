@@ -3,7 +3,6 @@ import Capture
 from Capture import CaptureSource
 import cv2
 from GestureRecognizer import Gesture
-import CommManager
 import TouchMenu
 import numpy as np
 import time
@@ -151,18 +150,29 @@ def fm_worker(image_to_process, authenticated_event, pitch_yaw, control_wheelcha
 
 
 ''' Communication Manager Process Worker '''
-def cm_worker(pitch_yaw, obstacle_detected_event, control_wheelchair_event):
+def cm_worker(pitch_yaw, obstacle_detected_event, control_wheelchair_event, home_steering_event):
     import CommManager
     cm = CommManager.CommManager()
     cm.log_to_console = False
+    driven = False
     cm.start()
     
     stopMessageSent = False
-    while True:
+    while True:        
+        if home_steering_event.is_set():
+            try:
+                cm.home()
+                home_steering_event.clear()
+            except Exception as e:
+                print("cm worker homing exception: ", e)
+        
         if control_wheelchair_event.is_set():
             try:
                 if stopMessageSent:
                     stopMessageSent = False
+                    
+                if not driven: 
+                    driven = True
                 
                 fPitch, fYaw = pitch_yaw.get()
                 pitch = int(fPitch)
@@ -183,6 +193,10 @@ def cm_worker(pitch_yaw, obstacle_detected_event, control_wheelchair_event):
                 stopMessageSent = True
                 for _ in range(3):
                     cm.eventLoop(0, 0)
+                time.sleep(0.1)
+            if driven:
+                driven = False
+                cm.home()
             time.sleep(0.1)
 
 
@@ -193,7 +207,6 @@ if __name__ == "__main__":
     ''' Module instances '''
     cap = Capture.Capture(CaptureSource.CV2)
     tm = TouchMenu.TouchMenu()
-    cm = CommManager.CommManager()
 
     ''' Display Window Creation '''
     cv2.namedWindow("Wheelchair")
@@ -204,6 +217,7 @@ if __name__ == "__main__":
     run = True
     image = None
     addNewUser = False
+    homeSteering = False
 
     ''' Shared Variables - Events '''
     image_to_process = manager.Value(np.ndarray, None)
@@ -217,6 +231,7 @@ if __name__ == "__main__":
     control_wheelchair_event = manager.Event()
     fr_ready_event = manager.Event()
     new_user_added_event = manager.Event()
+    home_steering_event = manager.Event()
     obstacle_detected_event = manager.Event()
 
     '''' Subprocesses '''
@@ -227,7 +242,7 @@ if __name__ == "__main__":
         target=fm_worker, name="fm_process", args=(image_to_process, authenticated_event, pitch_yaw, control_wheelchair_event, calibrating_event, calibration_instruction, active_user, last_active_user))
 
     cm_process = multiprocessing.Process(
-        target=cm_worker, name="cm_process", args=(pitch_yaw, obstacle_detected_event, control_wheelchair_event))
+        target=cm_worker, name="cm_process", args=(pitch_yaw, obstacle_detected_event, control_wheelchair_event, home_steering_event))
 
     ''' Function definitions '''
     def stop():
@@ -250,6 +265,10 @@ if __name__ == "__main__":
     def addNewUserCb():
         global addNewUser
         addNewUser = True
+    
+    def homeSteeringCb():
+        global homeSteering
+        homeSteering = True
 
     ''' Module configurations & initializations '''
     cv2.setMouseCallback("Wheelchair", tm.clickEvent)
@@ -260,7 +279,7 @@ if __name__ == "__main__":
     tm.imageSize = (600, 400)
     tm.addButton("Add User", colorR=(0, 155, 0), onClick=addNewUserCb)
     tm.addButton("Calibrate", onClick=toggleCalibrate)
-    tm.addButton("  Home", colorR=(0, 0, 255), onClick=cm.home)
+    tm.addButton("  Home", colorR=(0, 0, 255), onClick=homeSteeringCb)
     tm.addButton("  Exit", colorR=(255, 0, 0), onClick=stop)
     tm.start()
 
@@ -276,6 +295,10 @@ if __name__ == "__main__":
             tm.addUser(image)
             new_user_added_event.set()
             addNewUser = False
+        
+        if homeSteering:
+            home_steering_event.set()
+            homeSteering = False
         
         image = cv2.resize(image, (600, 400))
         
