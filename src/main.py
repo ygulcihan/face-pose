@@ -154,7 +154,7 @@ def cm_worker(pitch_yaw, obstacle_detected_event, control_wheelchair_event, home
     import CommManager
     cm = CommManager.CommManager()
     cm.log_to_console = False
-    driven = False
+    homed = False
     cm.start()
     
     stopMessageSent = False
@@ -171,8 +171,10 @@ def cm_worker(pitch_yaw, obstacle_detected_event, control_wheelchair_event, home
                 if stopMessageSent:
                     stopMessageSent = False
                     
-                if not driven: 
-                    driven = True
+                if not homed: 
+                    cm.home()
+                    time.sleep(3)
+                    homed = True
                 
                 fPitch, fYaw = pitch_yaw.get()
                 pitch = int(fPitch)
@@ -193,10 +195,7 @@ def cm_worker(pitch_yaw, obstacle_detected_event, control_wheelchair_event, home
                 stopMessageSent = True
                 for _ in range(3):
                     cm.eventLoop(0, 0)
-                time.sleep(0.1)
-            if driven:
-                driven = False
-                cm.home()
+                homed = False
             time.sleep(0.1)
 
 

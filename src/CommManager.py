@@ -104,7 +104,7 @@ class CommManager(object):
         if not self.__homing:
             self.__sendValues(speed=speed, position=pPosition)
         else:
-            time.sleep(3.5)
+            time.sleep(3)
             self.__homing = False
         
         if self.log_to_console:
