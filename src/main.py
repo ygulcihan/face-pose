@@ -173,7 +173,7 @@ def cm_worker(pitch_yaw, obstacle_detected_event, control_wheelchair_event, home
                     
                 if not homed: 
                     cm.home()
-                    time.sleep(2)
+                    time.sleep(1.2)
                     homed = True
                 
                 fPitch, fYaw = pitch_yaw.get()
