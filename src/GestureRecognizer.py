@@ -64,7 +64,7 @@ class GestureRecognizer(object):
                     self.browCalibrationEntryTime = time.time()
                     return self.calibrationInstruction, newThreshold
                 
-                elif (self.eyebrowLoweredRatio < self.eyebrowRaisedRatio + 10 and self.eyebrowLoweredRatio > self.eyebrowRaisedRatio - 10):
+                elif (self.eyebrowLoweredRatio < self.eyebrowRaisedRatio + 20 and self.eyebrowLoweredRatio > self.eyebrowRaisedRatio - 20):
                     self.eyebrowRaisedRatio = 0
                     self.eyebrowLoweredRatio = 0
                     self.calibrationInstruction = "    Raise your eyebrows"
