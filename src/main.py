@@ -209,8 +209,8 @@ if __name__ == "__main__":
 
     ''' Display Window Creation '''
     cv2.namedWindow("Wheelchair")
-    cv2.resizeWindow("Wheelchair", 750, 400)
-    cv2.moveWindow("Wheelchair", 25, 25)
+    cv2.resizeWindow("Wheelchair", 800, 480)
+    cv2.moveWindow("Wheelchair", -2, 0)
 
     ''' Global variables '''
     run = True
@@ -275,7 +275,7 @@ if __name__ == "__main__":
     loading_screen_img = cv2.resize(cv2.imread("resources/atilim_logo_bg.jpg"), (750, 400))
 
     tm.buttonHeight = 100
-    tm.imageSize = (600, 400)
+    tm.imageSize = (650, 480)
     tm.addButton("Add User", colorR=(0, 155, 0), onClick=addNewUserCb)
     tm.addButton("Calibrate", onClick=toggleCalibrate)
     tm.addButton("  Home", colorR=(0, 0, 255), onClick=homeSteeringCb)
@@ -299,7 +299,7 @@ if __name__ == "__main__":
             home_steering_event.set()
             homeSteering = False
         
-        image = cv2.resize(image, (600, 400))
+        image = cv2.resize(image, (650, 480))
         
         if image_to_process.get() is None:
             image.flags.writeable = False   # To pass by reference
