@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
     ''' Display Window Creation '''
     cv2.namedWindow("Wheelchair")
-    cv2.resizeWindow("Wheelchair", 800, 480)
+    cv2.resizeWindow("Wheelchair", 800, 450)
     cv2.moveWindow("Wheelchair", -2, 0)
 
     ''' Global variables '''
@@ -272,10 +272,10 @@ if __name__ == "__main__":
     ''' Module configurations & initializations '''
     cv2.setMouseCallback("Wheelchair", tm.clickEvent)
 
-    loading_screen_img = cv2.resize(cv2.imread("resources/atilim_logo_bg.jpg"), (750, 400))
+    loading_screen_img = cv2.resize(cv2.imread("resources/atilim_logo_bg.jpg"), (800, 450))
 
-    tm.buttonHeight = 100
-    tm.imageSize = (650, 480)
+    tm.buttonHeight = 112
+    tm.imageSize = (650, 450)
     tm.addButton("Add User", colorR=(0, 155, 0), onClick=addNewUserCb)
     tm.addButton("Calibrate", onClick=toggleCalibrate)
     tm.addButton("  Home", colorR=(0, 0, 255), onClick=homeSteeringCb)
@@ -299,7 +299,7 @@ if __name__ == "__main__":
             home_steering_event.set()
             homeSteering = False
         
-        image = cv2.resize(image, (650, 480))
+        image = cv2.resize(image, (650, 450))
         
         if image_to_process.get() is None:
             image.flags.writeable = False   # To pass by reference
@@ -307,9 +307,9 @@ if __name__ == "__main__":
             image.flags.writeable = True
 
         if (not authenticated_event.is_set()):
-            cv2.putText(image, "Facial Recognition in Progress", (10, 50),
+            cv2.putText(image, "Facial Recognition in Progress", (35, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
-            cv2.putText(image, "Please Look at the Camera", (90, 100),
+            cv2.putText(image, "Please Look at the Camera", (115, 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (50, 50, 255), 2)
                 
         else:
@@ -321,20 +321,20 @@ if __name__ == "__main__":
 
             cv2.putText(image, f"User: {active_user.get()}", (20, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.8, (40, 200, 13), 3)
-            cv2.putText(image, "Control: Enabled" if control_wheelchair_event.is_set() else "Control: Disabled", (20, 370),
+            cv2.putText(image, "Control: Enabled" if control_wheelchair_event.is_set() else "Control: Disabled", (20, 420),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (40, 200, 13) if control_wheelchair_event.is_set() else (50, 50, 255), 2)
 
             if not calibrating_event.is_set():
-                cv2.putText(image, "Pitch: " + str(int(pitch)), (420, 50),
+                cv2.putText(image, "Pitch: " + str(int(pitch)), (460, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-                cv2.putText(image, "Yaw:  " + str(int(yaw)), (420, 100),
+                cv2.putText(image, "Yaw:  " + str(int(yaw)), (460, 100),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
         
         if calibrating_event.is_set():
-            cv2.putText(image, "Calibrating...", (400, 50),
+            cv2.putText(image, "Calibrating...", (425, 50),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
             cv2.putText(
-                image, calibration_instruction.get(), (50, 100), cv2.FONT_HERSHEY_COMPLEX, 1,
+                image, calibration_instruction.get(), (75, 100), cv2.FONT_HERSHEY_COMPLEX, 1,
                     (0, 0, 255) if calibration_instruction.get() != "   Calibration Complete" else (40, 200, 13), 2)
             
         touchmenuImg = tm.getMenuImg()

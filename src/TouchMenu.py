@@ -40,8 +40,8 @@ class Button:
 
 class TouchMenu(object):
 
-    size = (150, 400)
-    imageSize = (600, 400)
+    size = (150, 450)
+    imageSize = (650, 450)
     buttonHeight = 100
     menuImg = cv2.resize(cv2.imread("resources/black_bg.jpg"), size)
     buttonCount = 0
