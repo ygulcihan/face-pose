@@ -3,7 +3,7 @@ import cvzone
 import numpy as np
 
 cap = cv2.VideoCapture(0)
-bg = cv2.imread("black_bg.jpg")
+bg = cv2.imread("resources/black_bg.jpg")
 bg = cv2.resize(bg, (150, 400))
 cvzone.putTextRect(bg, "Calibrate", pos=(0, 50), scale=2, thickness=2, colorR=(60,60,60), offset=30)
 
