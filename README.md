@@ -12,7 +12,8 @@ Facial Recognition is integrated with the software using face-recognition module
 ![WhatsApp Image 2023-07-17 at 12 33 34](https://github.com/ygulcihan/face-pose/assets/72352507/04a01d78-812a-43f6-beec-d249631b0821)
 
 
-
 A user interface is created using OpenCV's highgui functions.
 
 ![image](https://github.com/ygulcihan/face-pose/assets/72352507/c1ef2a46-5232-4341-829f-fc0c4524c5e9)
+
+You are free to examine or use the software for academic purposes only, for commercial purposes all rights are reserved.
